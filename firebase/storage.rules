@@ -1,0 +1,22 @@
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+    // Allow authenticated users to upload their own avatars
+    match /avatars/{userId}_{fileName} {
+      allow read: if request.auth != null;
+      allow write: if request.auth != null && 
+        request.auth.uid == userId.split('_')[0];
+    }
+    
+    // Allow authenticated users to upload post photos
+    match /post_photos/{fileName} {
+      allow read: if request.auth != null;
+      allow write: if request.auth != null;
+    }
+    
+    // Default: deny all
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+  }
+}

@@ -1,0 +1,27 @@
+{
+  "name": "proxinet-functions",
+  "private": true,
+  "engines": {
+    "node": "20"
+  },
+  "main": "lib/index.js",
+  "scripts": {
+    "build": "tsc",
+    "serve": "firebase emulators:start --only functions",
+    "deploy": "firebase deploy --only functions",
+    "lint": "eslint --ext .ts src"
+  },
+  "dependencies": {
+    "adm-zip": "^0.5.10",
+    "csv-parse": "^5.5.2",
+    "firebase-admin": "^12.6.0",
+    "firebase-functions": "^5.0.1"
+  },
+  "devDependencies": {
+    "@types/adm-zip": "^0.5.7",
+    "@typescript-eslint/eslint-plugin": "^8.0.0",
+    "@typescript-eslint/parser": "^8.0.0",
+    "eslint": "^9.8.0",
+    "typescript": "^5.4.5"
+  }
+}

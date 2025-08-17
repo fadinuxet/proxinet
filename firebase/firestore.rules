@@ -1,0 +1,79 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function isSignedIn() { return request.auth != null; }
+    function isOwner(uid) { return isSignedIn() && request.auth.uid == uid; }
+
+    // Posts with audience-based read access
+    // We assume each post stores:
+    // - authorId: string
+    // - visibility: 'firstDegree' | 'secondDegree' | 'custom'
+    // - allowedUserIds: array<string> (for custom precomputed audience)
+    match /posts/{postId} {
+      allow create: if isSignedIn();
+      allow read: if isSignedIn() && (
+        resource.data.authorId == request.auth.uid ||
+        (resource.data.visibility in ['firstDegree','secondDegree','custom'] &&
+          (resource.data.allowedUserIds != null && request.auth.uid in resource.data.allowedUserIds))
+      );
+      // Only author can update/delete
+      allow update, delete: if isSignedIn() && resource.data.authorId == request.auth.uid;
+    }
+
+    // Owner-only collections
+    match /availability/{userId} {
+      allow read, write: if isOwner(userId);
+    }
+    match /presence_city/{userId} {
+      allow read, write: if isOwner(userId);
+    }
+    match /presence_geo/{userId} {
+      allow write: if isOwner(userId);
+      // Nearby reads are approximate and privacy-preserving.
+      // Allow read of geohash + coarse lat/lng with TTL check enforced in app/CF.
+      allow read: if isSignedIn();
+    }
+    match /device_tokens/{doc} {
+      allow create: if isSignedIn();
+      allow read, update, delete: if isSignedIn() && resource.data.userId == request.auth.uid;
+    }
+    match /contact_tokens/{doc} {
+      allow read, write: if isSignedIn() && (
+        request.auth.uid == resource.data.ownerId ||
+        request.auth.uid == request.resource.data.ownerId
+      );
+    }
+    match /referrals/{userId} {
+      allow read, write: if isOwner(userId);
+    }
+    match /alerts/{doc} {
+      allow create: if isSignedIn();
+      allow read, update, delete: if isSignedIn() && resource.data.userId == request.auth.uid;
+    }
+
+    // BLE ephemeral tokens mapping (token -> userId), readable by signed-in clients to resolve peers
+    match /ble_tokens/{token} {
+      allow create: if isSignedIn();
+      allow read: if isSignedIn();
+      allow update, delete: if false; // server rotates
+    }
+
+    // Graph edges and profiles for token resolution
+    match /graph_edges/{edgeId} {
+      allow read: if isSignedIn();
+      allow write: if isOwner(resource.data.ownerId);
+    }
+    match /profiles/{userId} {
+      allow read: if isSignedIn();
+      allow write: if isOwner(userId);
+    }
+
+    // Custom audience groups
+    match /audiences/{userId} {
+      allow read, write: if isOwner(userId);
+    }
+    match /audiences/{userId}/groups/{groupId} {
+      allow read, write: if isOwner(userId);
+    }
+  }
+}
