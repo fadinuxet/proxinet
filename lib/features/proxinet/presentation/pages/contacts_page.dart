@@ -4,6 +4,8 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:permission_handler/permission_handler.dart';
+import 'package:get_it/get_it.dart';
+import '../../../../core/services/proxinet_presence_sync_service.dart';
 
 class ContactsPage extends StatefulWidget {
   const ContactsPage({super.key});
@@ -17,11 +19,13 @@ class _ContactsPageState extends State<ContactsPage> {
   Map<int, List<Map<String, dynamic>>> _connectionsByDegree = {};
   List<Map<String, dynamic>> _importedContacts = [];
   List<Map<String, dynamic>> _phoneContacts = [];
+  List<Map<String, dynamic>> _pendingContactRequests = [];
   
   @override
   void initState() {
     super.initState();
     _loadContacts();
+    _loadPendingContactRequests();
   }
   
   Future<void> _loadContacts() async {
@@ -176,6 +180,21 @@ class _ContactsPageState extends State<ContactsPage> {
       print('Error loading phone contacts: $e');
     }
   }
+
+  Future<void> _loadPendingContactRequests() async {
+    try {
+      final presenceSync = GetIt.instance<ProxinetPresenceSyncService>();
+      final requests = await presenceSync.getPendingContactRequests();
+      
+      if (mounted) {
+        setState(() {
+          _pendingContactRequests = requests;
+        });
+      }
+    } catch (e) {
+      print('Error loading pending contact requests: $e');
+    }
+  }
   
   @override
   Widget build(BuildContext context) {
@@ -231,7 +250,7 @@ class _ContactsPageState extends State<ContactsPage> {
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
           : DefaultTabController(
-              length: 2,
+              length: 4,
               child: Column(
                 children: [
                   Container(
@@ -240,6 +259,7 @@ class _ContactsPageState extends State<ContactsPage> {
                       labelColor: scheme.primary,
                       unselectedLabelColor: scheme.onSurfaceVariant,
                       indicatorColor: scheme.primary,
+                      isScrollable: true,
                       tabs: [
                         Tab(
                           child: Row(
@@ -248,6 +268,16 @@ class _ContactsPageState extends State<ContactsPage> {
                               Icon(Icons.people, size: 20),
                               const SizedBox(width: 8),
                               Text('Network'),
+                            ],
+                          ),
+                        ),
+                        Tab(
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(Icons.pending_actions, size: 20),
+                              const SizedBox(width: 8),
+                              Text('Requests (${_pendingContactRequests.length})'),
                             ],
                           ),
                         ),
@@ -278,6 +308,7 @@ class _ContactsPageState extends State<ContactsPage> {
                     child: TabBarView(
                       children: [
                         _buildNetworkTab(),
+                        _buildContactRequestsTab(),
                         _buildImportedContactsTab(),
                         _buildPhoneContactsTab(),
                       ],
@@ -357,6 +388,233 @@ class _ContactsPageState extends State<ContactsPage> {
     }
   }
   
+  Widget _buildContactRequestsTab() {
+    if (_pendingContactRequests.isEmpty) {
+      return _buildEmptyState(
+        icon: Icons.pending_actions_outlined,
+        title: 'No Pending Requests',
+        subtitle: 'You have no pending contact requests.',
+        actionText: 'Send Request',
+        onAction: () => context.go('/proxinet/connect'),
+      );
+    }
+
+    return Column(
+      children: [
+        // Header with refresh button
+        Padding(
+          padding: const EdgeInsets.all(16),
+          child: Row(
+            children: [
+              Expanded(
+                child: Text(
+                  'Pending Contact Requests',
+                  style: GoogleFonts.inter(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+              IconButton(
+                onPressed: _loadPendingContactRequests,
+                icon: const Icon(Icons.refresh),
+                tooltip: 'Refresh requests',
+              ),
+            ],
+          ),
+        ),
+        // Requests list
+        Expanded(
+          child: ListView.builder(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            itemCount: _pendingContactRequests.length,
+            itemBuilder: (context, index) {
+              final request = _pendingContactRequests[index];
+              return _buildContactRequestCard(request, scheme: Theme.of(context).colorScheme);
+            },
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildContactRequestCard(Map<String, dynamic> request, {required ColorScheme scheme}) {
+    return Card(
+      margin: const EdgeInsets.only(bottom: 12),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                CircleAvatar(
+                  backgroundColor: scheme.primary.withOpacity(0.1),
+                  child: Icon(
+                    Icons.person,
+                    color: scheme.primary,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        request['fromUserName'] ?? 'Unknown User',
+                        style: GoogleFonts.inter(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      if (request['fromUserEmail']?.isNotEmpty == true)
+                        Text(
+                          request['fromUserEmail'],
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: scheme.onSurface.withOpacity(0.6),
+                          ),
+                        ),
+                    ],
+                  ),
+                ),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: Colors.orange.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: Colors.orange.withOpacity(0.3)),
+                  ),
+                  child: Text(
+                    'Pending',
+                    style: TextStyle(
+                      fontSize: 10,
+                      color: Colors.orange,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            if (request['message']?.isNotEmpty == true) ...[
+              Text(
+                request['message'],
+                style: TextStyle(
+                  fontSize: 14,
+                  color: scheme.onSurface.withOpacity(0.8),
+                ),
+              ),
+              const SizedBox(height: 8),
+            ],
+            if (request['context']?.isNotEmpty == true)
+              Text(
+                'Context: ${request['context']}',
+                style: TextStyle(
+                  fontSize: 12,
+                  color: scheme.onSurface.withOpacity(0.6),
+                  fontStyle: FontStyle.italic,
+                ),
+              ),
+            const SizedBox(height: 16),
+            Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton.icon(
+                    onPressed: () => _rejectContactRequest(request['requestId']),
+                    icon: const Icon(Icons.close),
+                    label: const Text('Decline'),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: Colors.red,
+                      side: BorderSide(color: Colors.red),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: FilledButton.icon(
+                    onPressed: () => _approveContactRequest(request['requestId']),
+                    icon: const Icon(Icons.check),
+                    label: const Text('Accept'),
+                    style: FilledButton.styleFrom(
+                      backgroundColor: Colors.green,
+                      foregroundColor: Colors.white,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> _approveContactRequest(String requestId) async {
+    try {
+      final presenceSync = GetIt.instance<ProxinetPresenceSyncService>();
+      final success = await presenceSync.approveContactRequest(requestId);
+      
+      if (success) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Contact request approved!'),
+            backgroundColor: Colors.green,
+          ),
+        );
+        // Reload the data
+        await _loadPendingContactRequests();
+        await _loadContacts();
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Failed to approve request'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+
+  Future<void> _rejectContactRequest(String requestId) async {
+    try {
+      final presenceSync = GetIt.instance<ProxinetPresenceSyncService>();
+      final success = await presenceSync.rejectContactRequest(requestId);
+      
+      if (success) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Contact request declined'),
+            backgroundColor: Colors.orange,
+          ),
+        );
+        // Reload the data
+        await _loadPendingContactRequests();
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Failed to decline request'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+
   Widget _buildPhoneContactsTab() {
     if (_phoneContacts.isEmpty) {
       return _buildEmptyState(

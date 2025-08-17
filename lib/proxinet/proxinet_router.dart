@@ -43,6 +43,7 @@ class ProxinetRouter {
   static const String simpleGuide = '/simple-guide';
   static const String bleDiagnostic = '/proxinet/ble-diagnostic';
   static const String messages = '/proxinet/messages';
+  static const String availablePeople = '/proxinet/available-people';
 
   static final GoRouter router = GoRouter(
     navigatorKey: navKey,

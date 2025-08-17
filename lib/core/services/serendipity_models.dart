@@ -1,6 +1,80 @@
 // Models for Serendipity core features
 
-enum VisibilityAudience { firstDegree, secondDegree, custom }
+enum VisibilityAudience { firstDegree, secondDegree, custom, everyone }
+
+// User interests and networking preferences
+class UserInterests {
+  final String? industry;
+  final String? skills;
+  final String? networkingGoals;
+  final List<String> tags;
+  final String? location;
+  final DateTime? lastUpdated;
+
+  UserInterests({
+    this.industry,
+    this.skills,
+    this.networkingGoals,
+    this.tags = const [],
+    this.location,
+    this.lastUpdated,
+  });
+
+  factory UserInterests.fromMap(Map<String, dynamic> map) {
+    return UserInterests(
+      industry: map['industry']?.toString(),
+      skills: map['skills']?.toString(),
+      networkingGoals: map['networkingGoals']?.toString(),
+      tags: List<String>.from(map['tags'] ?? []),
+      location: map['location']?.toString(),
+      lastUpdated: map['lastUpdated']?.toDate(),
+    );
+  }
+
+  Map<String, dynamic> toMap() {
+    return {
+      if (industry != null) 'industry': industry,
+      if (skills != null) 'skills': skills,
+      if (networkingGoals != null) 'networkingGoals': networkingGoals,
+      'tags': tags,
+      if (location != null) 'location': location,
+      'lastUpdated': lastUpdated,
+    };
+  }
+
+  UserInterests copyWith({
+    String? industry,
+    String? skills,
+    String? networkingGoals,
+    List<String>? tags,
+    String? location,
+    DateTime? lastUpdated,
+  }) {
+    return UserInterests(
+      industry: industry ?? this.industry,
+      skills: skills ?? this.skills,
+      networkingGoals: networkingGoals ?? this.networkingGoals,
+      tags: tags ?? this.tags,
+      location: location ?? this.location,
+      lastUpdated: lastUpdated ?? this.lastUpdated,
+    );
+  }
+
+  bool get hasInterests => 
+      (industry?.isNotEmpty ?? false) || 
+      (skills?.isNotEmpty ?? false) || 
+      (networkingGoals?.isNotEmpty ?? false) ||
+      tags.isNotEmpty;
+
+  List<String> get allInterests {
+    final interests = <String>[];
+    if (industry?.isNotEmpty ?? false) interests.add(industry!);
+    if (skills?.isNotEmpty ?? false) interests.add(skills!);
+    if (networkingGoals?.isNotEmpty ?? false) interests.add(networkingGoals!);
+    interests.addAll(tags);
+    return interests;
+  }
+}
 
 class SerendipityPost {
   final String id;

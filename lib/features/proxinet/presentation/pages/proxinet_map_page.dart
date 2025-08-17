@@ -11,6 +11,7 @@ import 'dart:math';
 import '../../../../core/ui/proxinet_design.dart';
 import '../../../../core/utils/geohash.dart';
 import '../../../../core/services/proxinet_presence_sync_service.dart';
+import '../../../../core/services/serendipity_models.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 class ProxinetMapPage extends StatefulWidget {
@@ -49,6 +50,9 @@ class _ProxinetMapPageState extends State<ProxinetMapPage> with TickerProviderSt
     
     // Load available users (always load these regardless of nearby status)
     _loadAvailableUsers();
+    
+    // Initialize availability status
+    _presenceSync.initializeAvailabilityFromFirestore();
     
     // Listen to presence changes
     _presenceSync.addListener(_onPresenceChanged);
@@ -435,21 +439,36 @@ class _ProxinetMapPageState extends State<ProxinetMapPage> with TickerProviderSt
         title: Row(
           children: [
             Container(
-              width: 24,
-              height: 24,
+              width: 32,
+              height: 32,
               decoration: BoxDecoration(
                 color: Colors.green,
                 shape: BoxShape.circle,
-                border: Border.all(color: Colors.white, width: 1),
+                border: Border.all(color: Colors.white, width: 2),
               ),
-              child: const Icon(Icons.person_add, color: Colors.white, size: 16),
+              child: const Icon(Icons.person_add, color: Colors.white, size: 18),
             ),
             const SizedBox(width: 12),
-            Text(
-              'Available User',
-              style: GoogleFonts.inter(
-                fontSize: 18,
-                fontWeight: FontWeight.w600,
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    user['name'] ?? 'Available User',
+                    style: GoogleFonts.inter(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  Text(
+                    'Available to connect',
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: scheme.onSurface.withOpacity(0.6),
+                      fontWeight: FontWeight.w400,
+                    ),
+                  ),
+                ],
               ),
             ),
           ],
@@ -478,6 +497,37 @@ class _ProxinetMapPageState extends State<ProxinetMapPage> with TickerProviderSt
                 ),
               ],
             ),
+            const SizedBox(height: 8),
+            Row(
+              children: [
+                Icon(Icons.schedule, color: Colors.green, size: 16),
+                const SizedBox(width: 8),
+                Text(
+                  'Status: Available Now',
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: Colors.green,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ],
+            ),
+            if (user['audience'] != null) ...[
+              const SizedBox(height: 8),
+              Row(
+                children: [
+                  Icon(Icons.visibility, color: scheme.primary, size: 16),
+                  const SizedBox(width: 8),
+                  Text(
+                    'Audience: ${_formatAudience(user['audience'])}',
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: scheme.onSurface.withOpacity(0.6),
+                    ),
+                  ),
+                ],
+              ),
+            ],
           ],
         ),
         actions: [
@@ -485,13 +535,40 @@ class _ProxinetMapPageState extends State<ProxinetMapPage> with TickerProviderSt
             onPressed: () => Navigator.of(context).pop(),
             child: const Text('Cancel'),
           ),
+          // View Profile Button
+          OutlinedButton.icon(
+            onPressed: () {
+              Navigator.of(context).pop();
+              _viewUserProfile(user);
+            },
+            icon: const Icon(Icons.person),
+            label: const Text('Profile'),
+            style: OutlinedButton.styleFrom(
+              foregroundColor: scheme.primary,
+              side: BorderSide(color: scheme.primary),
+            ),
+          ),
+          // Add to Contacts Button
+          OutlinedButton.icon(
+            onPressed: () {
+              Navigator.of(context).pop();
+              _addToContacts(user);
+            },
+            icon: const Icon(Icons.person_add),
+            label: const Text('Add'),
+            style: OutlinedButton.styleFrom(
+              foregroundColor: Colors.green,
+              side: BorderSide(color: Colors.green),
+            ),
+          ),
+          // Chat Button
           FilledButton.icon(
             onPressed: () {
               Navigator.of(context).pop();
-              _connectToAvailableUser(user);
+              _startChat(user);
             },
-            icon: const Icon(Icons.connect_without_contact),
-            label: const Text('Connect'),
+            icon: const Icon(Icons.chat),
+            label: const Text('Chat'),
             style: FilledButton.styleFrom(
               backgroundColor: Colors.green,
               foregroundColor: Colors.white,
@@ -532,28 +609,43 @@ class _ProxinetMapPageState extends State<ProxinetMapPage> with TickerProviderSt
           final data = doc.data();
           final userId = doc.id;
           
-          // Get user profile to get location and other details
-          final userProfile = await FirebaseFirestore.instance
-              .collection('users')
-              .doc(userId)
-              .get();
+          // Check if location data is directly in availability document
+          double? lat = data['latitude'] as double?;
+          double? lng = data['longitude'] as double?;
+          String? userName = data['userName'] as String?;
           
-          if (userProfile.exists) {
-            final profileData = userProfile.data()!;
-            final lat = profileData['latitude'] as double?;
-            final lng = profileData['longitude'] as double?;
-            
-            if (lat != null && lng != null) {
-              availableUsers.add({
-                'id': userId,
-                'lat': lat,
-                'lng': lng,
-                'name': profileData['displayName'] ?? 'Available User',
-                'type': 'available', // Distinguish from nearby users
-                'audience': data['audience'] ?? 'firstDegree',
-                'until': data['until'],
-              });
+          // If no location in availability, try to get from user profile
+          if (lat == null || lng == null) {
+            try {
+              final userProfile = await FirebaseFirestore.instance
+                  .collection('users')
+                  .doc(userId)
+                  .get();
+              
+              if (userProfile.exists) {
+                final profileData = userProfile.data()!;
+                lat = profileData['latitude'] as double?;
+                lng = profileData['longitude'] as double?;
+                userName = profileData['displayName'] ?? 'Available User';
+              }
+            } catch (e) {
+              print('Error loading user profile: $e');
             }
+          }
+          
+          // Only add user if we have valid location data
+          if (lat != null && lng != null) {
+            availableUsers.add({
+              'id': userId,
+              'lat': lat,
+              'lng': lng,
+              'name': userName ?? 'Available User',
+              'type': 'available', // Distinguish from nearby users
+              'audience': data['audience'] ?? 'firstDegree',
+              'until': data['until'],
+            });
+          } else {
+            print('User $userId has no valid location data');
           }
         } catch (e) {
           print('Error loading available user: $e');
@@ -610,15 +702,41 @@ class _ProxinetMapPageState extends State<ProxinetMapPage> with TickerProviderSt
                   ),
                 ),
                 // Nearby users markers
-                ..._nearbyUsers.map((user) => Marker(
-                      point: LatLng(user['lat'], user['lng']),
-                      width: 30,
-                      height: 30,
+                ..._nearbyUsers.asMap().entries.map((entry) {
+                  final index = entry.key;
+                  final user = entry.value;
+                  final colors = [
+                    scheme.secondary,
+                    scheme.tertiary,
+                    scheme.error,
+                    scheme.primary,
+                    scheme.outline,
+                    Colors.purple,
+                    Colors.teal,
+                    Colors.orange,
+                    Colors.indigo,
+                    Colors.pink,
+                  ];
+                  final color = colors[index % colors.length];
+                  
+                  return Marker(
+                    point: LatLng(user['lat'], user['lng']),
+                    width: 32,
+                    height: 32,
+                    child: GestureDetector(
+                      onTap: () => _showEnhancedUserDialog(context, user, color, index),
                       child: Container(
                         decoration: BoxDecoration(
-                          color: scheme.secondary,
+                          color: color,
                           shape: BoxShape.circle,
                           border: Border.all(color: Colors.white, width: 2),
+                          boxShadow: [
+                            BoxShadow(
+                              color: color.withOpacity(0.4),
+                              blurRadius: 6,
+                              spreadRadius: 1,
+                            ),
+                          ],
                         ),
                         child: Icon(
                           Icons.person_pin_circle,
@@ -626,7 +744,9 @@ class _ProxinetMapPageState extends State<ProxinetMapPage> with TickerProviderSt
                           size: 16,
                         ),
                       ),
-                    )),
+                    ),
+                  );
+                }).toList(),
               ],
             ),
           ],
@@ -667,6 +787,128 @@ class _ProxinetMapPageState extends State<ProxinetMapPage> with TickerProviderSt
                           await _enableNearbyDiscovery(); // Update with new radius
                         }
                       },
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        // User Legend overlay
+        if (_nearbyUsers.isNotEmpty)
+          Positioned(
+            top: 16,
+            left: 16,
+            child: Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: scheme.surfaceContainerHighest.withOpacity(0.95),
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: scheme.outlineVariant.withOpacity(0.3)),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.1),
+                    blurRadius: 8,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    'Nearby Users',
+                    style: GoogleFonts.inter(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w700,
+                      color: scheme.onSurface,
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  // Current location
+                  Row(
+                    children: [
+                      Container(
+                        width: 16,
+                        height: 16,
+                        decoration: BoxDecoration(
+                          color: scheme.primary,
+                          shape: BoxShape.circle,
+                          border: Border.all(color: Colors.white, width: 1),
+                        ),
+                        child: const Icon(Icons.my_location, color: Colors.white, size: 10),
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        'Your Location',
+                        style: GoogleFonts.inter(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w500,
+                          color: scheme.onSurface,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  // Nearby users with different colors
+                  ..._nearbyUsers.asMap().entries.map((entry) {
+                    final index = entry.key;
+                    final colors = [
+                      scheme.secondary,
+                      scheme.tertiary,
+                      scheme.error,
+                      scheme.primary,
+                      scheme.outline,
+                      Colors.purple,
+                      Colors.teal,
+                      Colors.orange,
+                      Colors.indigo,
+                      Colors.pink,
+                    ];
+                    final color = colors[index % colors.length];
+                    
+                    return Padding(
+                      padding: const EdgeInsets.only(bottom: 6),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Container(
+                            width: 16,
+                            height: 16,
+                            decoration: BoxDecoration(
+                              color: color,
+                              shape: BoxShape.circle,
+                              border: Border.all(color: Colors.white, width: 1),
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Text(
+                            'User ${index + 1}',
+                            style: GoogleFonts.inter(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w500,
+                              color: scheme.onSurface,
+                            ),
+                          ),
+                        ],
+                      ),
+                    );
+                  }),
+                  const SizedBox(height: 8),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: scheme.primary.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(color: scheme.primary.withOpacity(0.3)),
+                    ),
+                    child: Text(
+                      '${_nearbyUsers.length} users nearby',
+                      style: GoogleFonts.inter(
+                        fontSize: 11,
+                        color: scheme.primary,
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
                   ),
                 ],
@@ -780,13 +1022,16 @@ class _ProxinetMapPageState extends State<ProxinetMapPage> with TickerProviderSt
                       point: LatLng(user['lat'], user['lng']),
                       width: 30,
                       height: 30,
-                      child: Container(
-                        decoration: BoxDecoration(
-                          color: Colors.green,
-                          shape: BoxShape.circle,
-                          border: Border.all(color: Colors.white, width: 2),
+                      child: GestureDetector(
+                        onTap: () => _showAvailableUserDialog(context, user),
+                        child: Container(
+                          decoration: BoxDecoration(
+                            color: Colors.green,
+                            shape: BoxShape.circle,
+                            border: Border.all(color: Colors.white, width: 2),
+                          ),
+                          child: Icon(Icons.person_add, color: Colors.white, size: 16),
                         ),
-                        child: const Icon(Icons.person_add, color: Colors.white, size: 16),
                       ),
                     )),
               ],
@@ -817,15 +1062,53 @@ class _ProxinetMapPageState extends State<ProxinetMapPage> with TickerProviderSt
                     ),
                     const SizedBox(width: 8),
                     Expanded(
-                      child: Text(
-                        'Available users to connect',
-                        style: const TextStyle(fontWeight: FontWeight.w500),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Available users to connect',
+                            style: const TextStyle(fontWeight: FontWeight.w500),
+                          ),
+                          if (_availableUsers.isNotEmpty)
+                            Text(
+                              '${_availableUsers.length} people available',
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: scheme.onSurface.withOpacity(0.6),
+                              ),
+                            ),
+                        ],
                       ),
                     ),
                   ],
                 ),
-                const SizedBox(height: 12),
-                // No slider or button for available users as they are static
+                const SizedBox(height: 16),
+                // Availability Controls
+                _buildAvailabilityControls(scheme),
+                // Location refresh button for available users
+                if (_presenceSync.isAvailableForConnections) ...[
+                  const SizedBox(height: 16),
+                  SizedBox(
+                    width: double.infinity,
+                    child: OutlinedButton.icon(
+                      onPressed: () async {
+                        await _presenceSync.refreshAvailabilityLocation();
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text('Location updated for other users'),
+                            backgroundColor: Colors.green,
+                          ),
+                        );
+                      },
+                      icon: const Icon(Icons.my_location),
+                      label: const Text('Update My Location'),
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: scheme.primary,
+                        side: BorderSide(color: scheme.primary),
+                      ),
+                    ),
+                  ),
+                ],
               ],
             ),
           ),
@@ -876,15 +1159,41 @@ class _ProxinetMapPageState extends State<ProxinetMapPage> with TickerProviderSt
                   ),
                 ),
                 // Nearby users markers
-                ..._nearbyUsers.map((user) => Marker(
-                      point: LatLng(user['lat'], user['lng']),
-                      width: 30,
-                      height: 30,
+                ..._nearbyUsers.asMap().entries.map((entry) {
+                  final index = entry.key;
+                  final user = entry.value;
+                  final colors = [
+                    scheme.secondary,
+                    scheme.tertiary,
+                    scheme.error,
+                    scheme.primary,
+                    scheme.outline,
+                    Colors.purple,
+                    Colors.teal,
+                    Colors.orange,
+                    Colors.indigo,
+                    Colors.pink,
+                  ];
+                  final color = colors[index % colors.length];
+                  
+                  return Marker(
+                    point: LatLng(user['lat'], user['lng']),
+                    width: 32,
+                    height: 32,
+                    child: GestureDetector(
+                      onTap: () => _showEnhancedUserDialog(context, user, color, index),
                       child: Container(
                         decoration: BoxDecoration(
-                          color: scheme.secondary,
+                          color: color,
                           shape: BoxShape.circle,
                           border: Border.all(color: Colors.white, width: 2),
+                          boxShadow: [
+                            BoxShadow(
+                              color: color.withOpacity(0.4),
+                              blurRadius: 6,
+                              spreadRadius: 1,
+                            ),
+                          ],
                         ),
                         child: Icon(
                           Icons.person_pin_circle,
@@ -892,19 +1201,24 @@ class _ProxinetMapPageState extends State<ProxinetMapPage> with TickerProviderSt
                           size: 16,
                         ),
                       ),
-                    )),
+                    ),
+                  );
+                }).toList(),
                 // Available users markers
                 ..._availableUsers.map((user) => Marker(
                       point: LatLng(user['lat'], user['lng']),
                       width: 30,
                       height: 30,
-                      child: Container(
-                        decoration: BoxDecoration(
-                          color: Colors.green,
-                          shape: BoxShape.circle,
-                          border: Border.all(color: Colors.white, width: 2),
+                      child: GestureDetector(
+                        onTap: () => _showAvailableUserDialog(context, user),
+                        child: Container(
+                          decoration: BoxDecoration(
+                            color: Colors.green,
+                            shape: BoxShape.circle,
+                            border: Border.all(color: Colors.white, width: 2),
+                          ),
+                          child: Icon(Icons.person_add, color: Colors.white, size: 16),
                         ),
-                        child: const Icon(Icons.person_add, color: Colors.white, size: 16),
                       ),
                     )),
               ],
@@ -953,6 +1267,155 @@ class _ProxinetMapPageState extends State<ProxinetMapPage> with TickerProviderSt
               ),
             ),
           ),
+        // Comprehensive Legend overlay
+        Positioned(
+          top: 16,
+          left: 16,
+          child: Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: scheme.surfaceContainerHighest.withOpacity(0.95),
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: scheme.outlineVariant.withOpacity(0.3)),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.1),
+                  blurRadius: 8,
+                  offset: const Offset(0, 2),
+                ),
+              ],
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  'Map Legend',
+                  style: GoogleFonts.inter(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w700,
+                    color: scheme.onSurface,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                // Current location
+                Row(
+                  children: [
+                    Container(
+                      width: 16,
+                      height: 16,
+                      decoration: BoxDecoration(
+                        color: scheme.primary,
+                        shape: BoxShape.circle,
+                        border: Border.all(color: Colors.white, width: 1),
+                      ),
+                      child: const Icon(Icons.my_location, color: Colors.white, size: 10),
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      'Your Location',
+                      style: GoogleFonts.inter(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w500,
+                        color: scheme.onSurface,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                // Available users
+                Row(
+                  children: [
+                    Container(
+                      width: 16,
+                      height: 16,
+                      decoration: BoxDecoration(
+                        color: Colors.green,
+                        shape: BoxShape.circle,
+                        border: Border.all(color: Colors.white, width: 1),
+                      ),
+                      child: const Icon(Icons.person_add, color: Colors.white, size: 10),
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      'Available to Connect',
+                      style: GoogleFonts.inter(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w500,
+                        color: scheme.onSurface,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                // Nearby users
+                if (_nearbyUsers.isNotEmpty) ...[
+                  Row(
+                    children: [
+                      Container(
+                        width: 16,
+                        height: 16,
+                        decoration: BoxDecoration(
+                          color: scheme.secondary,
+                          shape: BoxShape.circle,
+                          border: Border.all(color: Colors.white, width: 1),
+                        ),
+                        child: const Icon(Icons.person_pin_circle, color: Colors.white, size: 10),
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        'Nearby (BLE)',
+                        style: GoogleFonts.inter(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w500,
+                          color: scheme.onSurface,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  // Show nearby user count
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: scheme.secondary.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(color: scheme.secondary.withOpacity(0.3)),
+                    ),
+                    child: Text(
+                      '${_nearbyUsers.length} nearby users',
+                      style: GoogleFonts.inter(
+                        fontSize: 11,
+                        color: scheme.secondary,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                ],
+                // Show available user count
+                if (_availableUsers.isNotEmpty) ...[
+                  const SizedBox(height: 8),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: Colors.green.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(color: Colors.green.withOpacity(0.3)),
+                    ),
+                    child: Text(
+                      '${_availableUsers.length} available users',
+                      style: GoogleFonts.inter(
+                        fontSize: 11,
+                        color: Colors.green,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ),
+        ),
         // Bottom overlay
         Positioned(
           left: 16,
@@ -978,9 +1441,7 @@ class _ProxinetMapPageState extends State<ProxinetMapPage> with TickerProviderSt
                     const SizedBox(width: 8),
                     Expanded(
                       child: Text(
-                        _nearbyEnabled
-                            ? 'Nearby discovery is active'
-                            : 'Discover friends and contacts who opt‑in nearby.',
+                        _getDiscoveryMessage(),
                         style: const TextStyle(fontWeight: FontWeight.w500),
                       ),
                     ),
@@ -1013,6 +1474,23 @@ class _ProxinetMapPageState extends State<ProxinetMapPage> with TickerProviderSt
         ),
       ],
     );
+  }
+
+  // Get appropriate discovery message based on audience setting
+  String _getDiscoveryMessage() {
+    if (_nearbyEnabled) {
+      return 'Nearby discovery is active';
+    }
+    
+    // Check if user has "Everyone" audience set
+    if (_presenceSync.isAvailableForConnections) {
+      // This is a simplified check - in a real app you'd get the actual audience setting
+      // For now, we'll show a more inclusive message
+      return 'Discover anyone nearby who is available to connect';
+    }
+    
+    // Default message for restricted audiences
+    return 'Discover contacts and friends who opt-in nearby and available to connect';
   }
 
   @override
@@ -1112,6 +1590,506 @@ class _ProxinetMapPageState extends State<ProxinetMapPage> with TickerProviderSt
           _buildCombinedTab(scheme),
         ],
       ),
+    );
+  }
+
+  void _showEnhancedUserDialog(BuildContext context, Map<String, dynamic> user, Color color, int index) {
+    final scheme = Theme.of(context).colorScheme;
+    
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Row(
+          children: [
+            Container(
+              width: 32,
+              height: 32,
+              decoration: BoxDecoration(
+                color: color,
+                shape: BoxShape.circle,
+                border: Border.all(color: Colors.white, width: 2),
+              ),
+              child: const Icon(
+                Icons.person_pin_circle,
+                color: Colors.white,
+                size: 18,
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Nearby User ${index + 1}',
+                    style: GoogleFonts.inter(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  Text(
+                    'Tap to interact',
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: scheme.onSurface.withOpacity(0.6),
+                      fontWeight: FontWeight.w400,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'This person is nearby and available for connection.',
+              style: TextStyle(
+                color: scheme.onSurface.withOpacity(0.7),
+              ),
+            ),
+            const SizedBox(height: 16),
+            Row(
+              children: [
+                Icon(Icons.location_on, color: scheme.primary, size: 16),
+                const SizedBox(width: 8),
+                Text(
+                  'Distance: ${_calculateDistance(user['lat'], user['lng']).toStringAsFixed(1)}m',
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: scheme.onSurface.withOpacity(0.6),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            Row(
+              children: [
+                Icon(Icons.signal_cellular_alt, color: color, size: 16),
+                const SizedBox(width: 8),
+                Text(
+                  'Signal Strength: ${_getSignalStrength(user)}',
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: scheme.onSurface.withOpacity(0.6),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('Cancel'),
+          ),
+          // View Profile Button
+          OutlinedButton.icon(
+            onPressed: () {
+              Navigator.of(context).pop();
+              _viewUserProfile(user);
+            },
+            icon: const Icon(Icons.person),
+            label: const Text('Profile'),
+            style: OutlinedButton.styleFrom(
+              foregroundColor: scheme.primary,
+              side: BorderSide(color: scheme.primary),
+            ),
+          ),
+          // Add to Contacts Button
+          OutlinedButton.icon(
+            onPressed: () {
+              Navigator.of(context).pop();
+              _addToContacts(user);
+            },
+            icon: const Icon(Icons.person_add),
+            label: const Text('Add'),
+            style: OutlinedButton.styleFrom(
+              foregroundColor: Colors.green,
+              side: BorderSide(color: Colors.green),
+            ),
+          ),
+          // Chat Button
+          FilledButton.icon(
+            onPressed: () {
+              Navigator.of(context).pop();
+              _startChat(user);
+            },
+            icon: const Icon(Icons.chat),
+            label: const Text('Chat'),
+            style: FilledButton.styleFrom(
+              backgroundColor: color,
+              foregroundColor: Colors.white,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  String _getSignalStrength(Map<String, dynamic> user) {
+    // This could be enhanced with actual BLE signal strength data
+    // For now, we'll simulate based on distance
+    final distance = _calculateDistance(user['lat'], user['lng']);
+    if (distance < 10) return 'Excellent';
+    if (distance < 25) return 'Good';
+    if (distance < 50) return 'Fair';
+    return 'Weak';
+  }
+
+  String _formatAudience(String? audience) {
+    switch (audience) {
+      case 'firstDegree':
+        return '1st Degree Connections';
+      case 'secondDegree':
+        return '2nd Degree Connections';
+      case 'custom':
+        return 'Custom Groups';
+      case 'everyone':
+        return 'Everyone in Area';
+      default:
+        return 'Unknown';
+    }
+  }
+
+  void _viewUserProfile(Map<String, dynamic> user) {
+    // TODO: Implement user profile view
+    // This could navigate to a profile page or show a detailed modal
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('Viewing profile for User ${user['id']}'),
+        backgroundColor: Theme.of(context).colorScheme.primary,
+        action: SnackBarAction(
+          label: 'View Full Profile',
+          onPressed: () {
+            // Navigate to profile page
+            context.push('/proxinet/profile');
+          },
+        ),
+      ),
+    );
+  }
+
+  void _addToContacts(Map<String, dynamic> user) {
+    // Use the new contact request system
+    _showContactRequestDialog(context, user);
+  }
+
+  void _showContactRequestDialog(BuildContext context, Map<String, dynamic> user) {
+    final scheme = Theme.of(context).colorScheme;
+    
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Row(
+          children: [
+            Icon(Icons.person_add, color: scheme.primary),
+            const SizedBox(width: 12),
+            Text(
+              'Add to Contacts',
+              style: GoogleFonts.inter(
+                fontSize: 18,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Send a contact request to ${user['name'] ?? 'this user'}?',
+              style: TextStyle(
+                color: scheme.onSurface.withOpacity(0.7),
+              ),
+            ),
+            const SizedBox(height: 16),
+            Text(
+              'They will receive a notification and can choose to accept or decline your request.',
+              style: TextStyle(
+                fontSize: 12,
+                color: scheme.onSurface.withOpacity(0.6),
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('Cancel'),
+          ),
+          FilledButton.icon(
+            onPressed: () async {
+              Navigator.of(context).pop();
+              await _sendContactRequest(user);
+            },
+            icon: const Icon(Icons.send),
+            label: const Text('Send Request'),
+            style: FilledButton.styleFrom(
+              backgroundColor: scheme.primary,
+              foregroundColor: Colors.white,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _sendContactRequest(Map<String, dynamic> user) async {
+    try {
+      final success = await _presenceSync.sendContactRequest(
+        user['id'],
+        message: 'Would like to connect with you',
+        context: 'Found on ProxiNet map',
+      );
+
+      if (mounted) {
+        if (success) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Contact request sent to ${user['name'] ?? 'user'}'),
+              backgroundColor: Colors.green,
+              action: SnackBarAction(
+                label: 'View Requests',
+                onPressed: () {
+                  // Navigate to contacts page to see pending requests
+                  context.push('/proxinet/contacts');
+                },
+              ),
+            ),
+          );
+        } else {
+          // Check why it failed
+          final alreadySent = await _presenceSync.hasContactRequestSent(user['id']);
+          final alreadyConnected = await _presenceSync.isAlreadyConnected(user['id']);
+          
+          String message;
+          if (alreadyConnected) {
+            message = 'You are already connected to this user';
+          } else if (alreadySent) {
+            message = 'Contact request already sent to this user';
+          } else {
+            message = 'Failed to send contact request. Please try again.';
+          }
+          
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(message),
+              backgroundColor: Colors.orange,
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error sending contact request: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
+  void _startChat(Map<String, dynamic> user) {
+    // TODO: Implement chat functionality
+    // This could start a new conversation or navigate to existing chat
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('Starting chat with User ${user['id']}'),
+        backgroundColor: Theme.of(context).colorScheme.primary,
+        action: SnackBarAction(
+          label: 'Open Chat',
+          onPressed: () {
+            // Navigate to messages/chat
+            context.push('/proxinet/messages');
+          },
+        ),
+      ),
+    );
+  }
+
+  Widget _buildAvailabilityControls(ColorScheme scheme) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Current Status
+        Row(
+          children: [
+            Icon(
+              _presenceSync.isAvailableForConnections 
+                ? Icons.check_circle 
+                : Icons.cancel,
+              color: _presenceSync.isAvailableForConnections 
+                ? Colors.green 
+                : Colors.red,
+              size: 20,
+            ),
+            const SizedBox(width: 8),
+            Text(
+              _presenceSync.isAvailableForConnections 
+                ? 'You are available to connect'
+                : 'You are not available to connect',
+              style: GoogleFonts.inter(
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+                color: _presenceSync.isAvailableForConnections 
+                  ? Colors.green 
+                  : Colors.red,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 16),
+        
+        // Availability Toggle
+        Row(
+          children: [
+            Expanded(
+              child: GradientButton(
+                onPressed: () async {
+                  if (_presenceSync.isAvailableForConnections) {
+                    // Disable availability
+                    await _presenceSync.setAvailabilityForConnections(false);
+                  } else {
+                    // Enable availability with "Everyone" audience
+                    await _presenceSync.setAvailabilityForConnections(
+                      true,
+                      audience: VisibilityAudience.everyone,
+                      hours: 2,
+                    );
+                  }
+                  if (mounted) setState(() {});
+                },
+                padding: const EdgeInsets.symmetric(vertical: 12),
+                borderRadius: BorderRadius.circular(10),
+                child: Text(
+                  _presenceSync.isAvailableForConnections 
+                    ? 'Set Unavailable' 
+                    : 'Set Available to Everyone',
+                ),
+              ),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: OutlinedButton.icon(
+                onPressed: () => context.push('/proxinet/availability'),
+                icon: const Icon(Icons.settings),
+                label: const Text('Advanced'),
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: scheme.primary,
+                  side: BorderSide(color: scheme.primary),
+                ),
+              ),
+            ),
+          ],
+        ),
+        
+        if (_presenceSync.isAvailableForConnections) ...[
+          const SizedBox(height: 16),
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: Colors.green.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: Colors.green.withOpacity(0.3)),
+            ),
+            child: Row(
+              children: [
+                Icon(Icons.public, color: Colors.green, size: 16),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    'Visible to everyone in this area',
+                    style: GoogleFonts.inter(
+                      fontSize: 12,
+                      color: Colors.green,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+        
+        const SizedBox(height: 16),
+        
+        // BLE Discovery Controls
+        Text(
+          'Nearby Discovery',
+          style: GoogleFonts.inter(
+            fontSize: 14,
+            fontWeight: FontWeight.w600,
+            color: scheme.onSurface,
+          ),
+        ),
+        const SizedBox(height: 8),
+        Row(
+          children: [
+            Expanded(
+              child: GradientButton(
+                onPressed: () async {
+                  if (_nearbyEnabled) {
+                    await _disableNearbyDiscovery();
+                  } else {
+                    await _enableNearbyDiscovery();
+                  }
+                },
+                padding: const EdgeInsets.symmetric(vertical: 12),
+                borderRadius: BorderRadius.circular(10),
+                child: Text(_nearbyEnabled ? 'Disable Discovery' : 'Enable Discovery'),
+              ),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: OutlinedButton.icon(
+                onPressed: _getCurrentLocation,
+                icon: const Icon(Icons.my_location),
+                label: const Text('My Location'),
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: scheme.primary,
+                  side: BorderSide(color: scheme.primary),
+                ),
+              ),
+            ),
+          ],
+        ),
+        
+        if (_nearbyEnabled) ...[
+          const SizedBox(height: 16),
+          Text(
+            'Discovery Radius: ${_radiusKm.toStringAsFixed(1)}km',
+            style: GoogleFonts.inter(
+              fontSize: 14,
+              fontWeight: FontWeight.w600,
+              color: scheme.onSurface,
+            ),
+          ),
+          const SizedBox(height: 8),
+          SizedBox(
+            width: double.infinity,
+            child: Slider(
+              value: _radiusKm,
+              min: 0.1,
+              max: 10.0,
+              divisions: 99,
+              onChanged: (value) {
+                setState(() => _radiusKm = value);
+              },
+              onChangeEnd: (value) async {
+                if (_nearbyEnabled) {
+                  await _enableNearbyDiscovery(); // Update with new radius
+                }
+              },
+            ),
+          ),
+        ],
+      ],
     );
   }
 }

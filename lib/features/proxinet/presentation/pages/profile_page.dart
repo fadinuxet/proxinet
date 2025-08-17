@@ -23,6 +23,9 @@ class _ProfilePageState extends State<ProfilePage> {
   final _companyController = TextEditingController();
   final _titleController = TextEditingController();
   final _locationController = TextEditingController();
+  final _industryController = TextEditingController();
+  final _skillsController = TextEditingController();
+  final _networkingGoalsController = TextEditingController();
 
   bool _isLoading = false;
   bool _isEditing = false;
@@ -45,11 +48,17 @@ class _ProfilePageState extends State<ProfilePage> {
     _companyController.removeListener(_onFieldChanged);
     _titleController.removeListener(_onFieldChanged);
     _locationController.removeListener(_onFieldChanged);
+    _industryController.removeListener(_onFieldChanged);
+    _skillsController.removeListener(_onFieldChanged);
+    _networkingGoalsController.removeListener(_onFieldChanged);
     _nameController.dispose();
     _bioController.dispose();
     _companyController.dispose();
     _titleController.dispose();
     _locationController.dispose();
+    _industryController.dispose();
+    _skillsController.dispose();
+    _networkingGoalsController.dispose();
     super.dispose();
   }
 
@@ -60,6 +69,9 @@ class _ProfilePageState extends State<ProfilePage> {
     _companyController.addListener(_onFieldChanged);
     _titleController.addListener(_onFieldChanged);
     _locationController.addListener(_onFieldChanged);
+    _industryController.addListener(_onFieldChanged);
+    _skillsController.addListener(_onFieldChanged);
+    _networkingGoalsController.addListener(_onFieldChanged);
   }
 
   void _onFieldChanged() {
@@ -99,6 +111,9 @@ class _ProfilePageState extends State<ProfilePage> {
           'company': _companyController.text.trim(),
           'title': _titleController.text.trim(),
           'location': _locationController.text.trim(),
+          'industry': _industryController.text.trim(),
+          'skills': _skillsController.text.trim(),
+          'networkingGoals': _networkingGoalsController.text.trim(),
           'updatedAt': FieldValue.serverTimestamp(),
         });
       } else {
@@ -108,6 +123,9 @@ class _ProfilePageState extends State<ProfilePage> {
           'company': _companyController.text.trim(),
           'title': _titleController.text.trim(),
           'location': _locationController.text.trim(),
+          'industry': _industryController.text.trim(),
+          'skills': _skillsController.text.trim(),
+          'networkingGoals': _networkingGoalsController.text.trim(),
           'email': user.email ?? '',
           'createdAt': FieldValue.serverTimestamp(),
           'updatedAt': FieldValue.serverTimestamp(),
@@ -136,18 +154,16 @@ class _ProfilePageState extends State<ProfilePage> {
   }
 
   Future<void> _loadProfile() async {
-    final user = FirebaseAuth.instance.currentUser;
-    if (user == null) {
-      print('No authenticated user found');
-      return;
-    }
-
-    print('Loading profile for user: ${user.uid}');
-    setState(() {
-      _isLoading = true;
-    });
+    setState(() => _isLoading = true);
 
     try {
+      final user = FirebaseAuth.instance.currentUser;
+      if (user == null) {
+        throw Exception('User not authenticated');
+      }
+
+      print('Loading profile for user: ${user.uid}');
+
       // First, try to get the existing profile
       final doc = await FirebaseFirestore.instance
           .collection('profiles')
@@ -157,12 +173,32 @@ class _ProfilePageState extends State<ProfilePage> {
       if (doc.exists) {
         print('Profile found, loading data');
         final data = doc.data()!;
-        _nameController.text = data['name'] ?? '';
-        _bioController.text = data['bio'] ?? '';
-        _companyController.text = data['company'] ?? '';
-        _titleController.text = data['title'] ?? '';
-        _locationController.text = data['location'] ?? '';
-        _avatarUrl = data['avatarUrl'];
+        
+        // Safely load profile data with null checks
+        _nameController.text = data['name']?.toString() ?? '';
+        _bioController.text = data['bio']?.toString() ?? '';
+        _companyController.text = data['company']?.toString() ?? '';
+        _titleController.text = data['title']?.toString() ?? '';
+        _locationController.text = data['location']?.toString() ?? '';
+        _industryController.text = data['industry']?.toString() ?? '';
+        _skillsController.text = data['skills']?.toString() ?? '';
+        _networkingGoalsController.text = data['networkingGoals']?.toString() ?? '';
+        
+        // Safely handle avatar URL
+        final avatarUrl = data['avatarUrl']?.toString();
+        if (avatarUrl != null && avatarUrl.isNotEmpty) {
+          // Validate URL format
+          try {
+            Uri.parse(avatarUrl);
+            _avatarUrl = avatarUrl;
+            print('Avatar URL loaded: $avatarUrl');
+          } catch (e) {
+            print('Invalid avatar URL format: $avatarUrl, error: $e');
+            _avatarUrl = null;
+          }
+        } else {
+          _avatarUrl = null;
+        }
       } else {
         print('Profile not found, creating new one');
         // Create a new profile document
@@ -184,12 +220,23 @@ class _ProfilePageState extends State<ProfilePage> {
 
           // Set default values from Firebase Auth
           _nameController.text = user.displayName ?? 'New User';
-          _avatarUrl = user.photoURL;
+          // Only use Firebase Auth photo URL if it's valid
+          if (user.photoURL != null && user.photoURL!.isNotEmpty) {
+            try {
+              Uri.parse(user.photoURL!);
+              _avatarUrl = user.photoURL;
+            } catch (e) {
+              print('Invalid Firebase Auth photo URL: ${user.photoURL}, error: $e');
+              _avatarUrl = null;
+            }
+          } else {
+            _avatarUrl = null;
+          }
         } catch (createError) {
           print('Error creating profile: $createError');
           // Set default values anyway and continue
           _nameController.text = user.displayName ?? 'New User';
-          _avatarUrl = user.photoURL;
+          _avatarUrl = null; // Don't use potentially invalid URL
 
           if (mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
@@ -208,8 +255,31 @@ class _ProfilePageState extends State<ProfilePage> {
       print('Error loading profile: $e');
 
       // Set default values from Firebase Auth as fallback
-      _nameController.text = user.displayName ?? 'New User';
-      _avatarUrl = user.photoURL;
+      try {
+        final user = FirebaseAuth.instance.currentUser;
+        if (user != null) {
+          _nameController.text = user.displayName ?? 'New User';
+          // Only use Firebase Auth photo URL if it's valid
+          if (user.photoURL != null && user.photoURL!.isNotEmpty) {
+            try {
+              Uri.parse(user.photoURL!);
+              _avatarUrl = user.photoURL;
+            } catch (e) {
+              print('Invalid Firebase Auth photo URL: ${user.photoURL}, error: $e');
+              _avatarUrl = null;
+            }
+          } else {
+            _avatarUrl = null;
+          }
+        } else {
+          _nameController.text = 'New User';
+          _avatarUrl = null;
+        }
+      } catch (fallbackError) {
+        print('Fallback error: $fallbackError');
+        _nameController.text = 'New User';
+        _avatarUrl = null;
+      }
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -276,6 +346,11 @@ class _ProfilePageState extends State<ProfilePage> {
               'Image too large. Please select an image smaller than 5MB.');
         }
 
+        // Validate image format
+        if (bytes.length < 100) {
+          throw Exception('Invalid image file. Please select a valid image.');
+        }
+
         final fileName =
             '${user.uid}_${DateTime.now().millisecondsSinceEpoch}.jpg';
         final ref = FirebaseStorage.instance.ref('avatars/$fileName');
@@ -288,47 +363,98 @@ class _ProfilePageState extends State<ProfilePage> {
           },
         );
 
+        // Show upload progress
         final uploadTask = ref.putData(bytes, metadata);
-        uploadTask.snapshotEvents.listen((snapshot) {
-          print(
-              'Upload progress: ${snapshot.bytesTransferred}/${snapshot.totalBytes}');
-        });
-        await uploadTask; // Wait for upload to complete
+        
+        // Listen to upload progress
+        uploadTask.snapshotEvents.listen(
+          (snapshot) {
+            print('Upload progress: ${snapshot.bytesTransferred}/${snapshot.totalBytes}');
+          },
+          onError: (error) {
+            print('Upload error during progress: $error');
+          },
+        );
 
-        final url = await ref.getDownloadURL();
+        // Wait for upload to complete with timeout
+        await uploadTask.timeout(
+          const Duration(minutes: 5),
+          onTimeout: () {
+            throw Exception('Upload timed out. Please try again.');
+          },
+        );
+
+        // Get download URL
+        final url = await ref.getDownloadURL().timeout(
+          const Duration(seconds: 30),
+          onTimeout: () {
+            throw Exception('Failed to get download URL. Please try again.');
+          },
+        );
+
+        // Validate URL
+        if (url.isEmpty) {
+          throw Exception('Invalid download URL received.');
+        }
+
+        // Update local state
         setState(() => _avatarUrl = url);
 
+        // Update Firestore profile
         final profileRef =
             FirebaseFirestore.instance.collection('profiles').doc(user.uid);
-        final profileDoc = await profileRef.get();
+        
+        try {
+          final profileDoc = await profileRef.get();
 
-        if (profileDoc.exists) {
-          await profileRef.update(
-              {'avatarUrl': url, 'updatedAt': FieldValue.serverTimestamp()});
-        } else {
-          await profileRef.set({
-            'avatarUrl': url,
-            'name': user.displayName ?? 'New User',
-            'email': user.email ?? '',
-            'createdAt': FieldValue.serverTimestamp(),
-            'updatedAt': FieldValue.serverTimestamp(),
-          });
-        }
-        _hasUnsavedChanges = false;
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Avatar updated successfully!'),
-              backgroundColor: Colors.green,
-            ),
-          );
+          if (profileDoc.exists) {
+            await profileRef.update({
+              'avatarUrl': url,
+              'updatedAt': FieldValue.serverTimestamp(),
+            });
+          } else {
+            await profileRef.set({
+              'avatarUrl': url,
+              'name': user.displayName ?? 'New User',
+              'email': user.email ?? '',
+              'createdAt': FieldValue.serverTimestamp(),
+              'updatedAt': FieldValue.serverTimestamp(),
+            });
+          }
+          
+          _hasUnsavedChanges = false;
+          
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('Avatar updated successfully!'),
+                backgroundColor: Colors.green,
+              ),
+            );
+          }
+        } catch (firestoreError) {
+          print('Firestore update error: $firestoreError');
+          // Even if Firestore fails, we still have the local avatar
+          // Show warning but don't crash
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text('Avatar updated locally but failed to save to profile. Please try again.'),
+                backgroundColor: Colors.orange,
+                action: SnackBarAction(
+                  label: 'Retry Save',
+                  onPressed: () => _retryAvatarSave(url),
+                ),
+              ),
+            );
+          }
         }
       } catch (uploadError) {
         print('Upload error: $uploadError');
         String errorMessage = 'Failed to update avatar';
+        
         if (uploadError.toString().contains('permission')) {
-          errorMessage =
-              'Storage permission required. Please grant access in settings.';
+          errorMessage = 'Storage permission required. Please grant access in settings.';
         } else if (uploadError.toString().contains('too large')) {
           errorMessage = 'Image too large. Please select a smaller image.';
         } else if (uploadError.toString().contains('network')) {
@@ -337,9 +463,12 @@ class _ProfilePageState extends State<ProfilePage> {
           errorMessage = 'Upload timed out. Please try again.';
         } else if (uploadError.toString().contains('unauthorized')) {
           errorMessage = 'Authentication error. Please sign in again.';
+        } else if (uploadError.toString().contains('Invalid image')) {
+          errorMessage = 'Invalid image file. Please select a valid image.';
         } else {
           errorMessage = 'Error updating avatar: $uploadError';
         }
+        
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
@@ -359,8 +488,7 @@ class _ProfilePageState extends State<ProfilePage> {
       if (mounted) {
         String errorMessage = 'Failed to update avatar';
         if (e.toString().contains('permission')) {
-          errorMessage =
-              'Permission required. Please grant access in settings.';
+          errorMessage = 'Permission required. Please grant access in settings.';
         } else if (e.toString().contains('not authenticated')) {
           errorMessage = 'Please sign in again.';
         } else {
@@ -381,6 +509,80 @@ class _ProfilePageState extends State<ProfilePage> {
     } finally {
       if (mounted) {
         setState(() => _isLoading = false);
+      }
+    }
+  }
+
+  // Retry saving avatar URL to Firestore
+  Future<void> _retryAvatarSave(String avatarUrl) async {
+    try {
+      final user = FirebaseAuth.instance.currentUser;
+      if (user == null) return;
+
+      final profileRef =
+          FirebaseFirestore.instance.collection('profiles').doc(user.uid);
+      
+      await profileRef.update({
+        'avatarUrl': avatarUrl,
+        'updatedAt': FieldValue.serverTimestamp(),
+      });
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Avatar profile updated successfully!'),
+            backgroundColor: Colors.green,
+          ),
+        );
+      }
+    } catch (e) {
+      print('Retry avatar save error: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to update profile: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
+  // Safely clear avatar
+  Future<void> _clearAvatar() async {
+    try {
+      final user = FirebaseAuth.instance.currentUser;
+      if (user == null) return;
+
+      // Clear local state
+      setState(() => _avatarUrl = null);
+
+      // Update Firestore profile
+      final profileRef =
+          FirebaseFirestore.instance.collection('profiles').doc(user.uid);
+      
+      await profileRef.update({
+        'avatarUrl': FieldValue.delete(),
+        'updatedAt': FieldValue.serverTimestamp(),
+      });
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Avatar cleared successfully'),
+            backgroundColor: Colors.blue,
+          ),
+        );
+      }
+    } catch (e) {
+      print('Clear avatar error: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to clear avatar: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
       }
     }
   }
@@ -751,12 +953,7 @@ class _ProfilePageState extends State<ProfilePage> {
                       ),
                       child: ClipOval(
                         child: _avatarUrl != null
-                            ? Image.network(
-                                _avatarUrl!,
-                                fit: BoxFit.cover,
-                                errorBuilder: (context, error, stackTrace) =>
-                                    _buildDefaultAvatar(scheme),
-                              )
+                            ? _buildSafeAvatar(scheme)
                             : _buildDefaultAvatar(scheme),
                       ),
                     ),
@@ -782,6 +979,35 @@ class _ProfilePageState extends State<ProfilePage> {
                             borderRadius: BorderRadius.circular(20),
                             child: const Icon(
                               Icons.camera_alt,
+                              color: Colors.white,
+                              size: 20,
+                            ),
+                          ),
+                        ),
+                      ),
+                    // Clear avatar option (only show when avatar exists)
+                    if (_isEditing && _avatarUrl != null)
+                      Positioned(
+                        top: 0,
+                        right: 0,
+                        child: Container(
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            color: Colors.red,
+                            shape: BoxShape.circle,
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.red.withOpacity(0.3),
+                                blurRadius: 8,
+                                offset: const Offset(0, 2),
+                              ),
+                            ],
+                          ),
+                          child: InkWell(
+                            onTap: () => _showClearAvatarDialog(context),
+                            borderRadius: BorderRadius.circular(20),
+                            child: const Icon(
+                              Icons.clear,
                               color: Colors.white,
                               size: 20,
                             ),
@@ -879,6 +1105,54 @@ class _ProfilePageState extends State<ProfilePage> {
 
                 const SizedBox(height: 24),
 
+                // Interest & Networking Section
+                Text(
+                  'Interests & Networking',
+                  style: GoogleFonts.inter(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w600,
+                    color: scheme.onSurface,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'Help others discover you and find meaningful connections',
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: scheme.onSurface.withOpacity(0.7),
+                  ),
+                ),
+                const SizedBox(height: 16),
+
+                _buildTextField(
+                  controller: _industryController,
+                  label: 'Industry',
+                  icon: Icons.business_center,
+                  hint: 'e.g., Technology, Healthcare, Finance',
+                ),
+
+                const SizedBox(height: 16),
+
+                _buildTextField(
+                  controller: _skillsController,
+                  label: 'Skills & Expertise',
+                  icon: Icons.psychology,
+                  hint: 'e.g., AI, Marketing, Design, Leadership',
+                  maxLines: 2,
+                ),
+
+                const SizedBox(height: 16),
+
+                _buildTextField(
+                  controller: _networkingGoalsController,
+                  label: 'Networking Goals',
+                  icon: Icons.connect_without_contact,
+                  hint: 'e.g., Find collaborators, Learn new skills, Expand network',
+                  maxLines: 2,
+                ),
+
+                const SizedBox(height: 24),
+
                 // Auto-save info
                 Container(
                   padding: const EdgeInsets.all(16),
@@ -935,6 +1209,37 @@ class _ProfilePageState extends State<ProfilePage> {
                 if (_locationController.text.isNotEmpty) ...[
                   _buildProfileInfo(
                       'Location', _locationController.text, Icons.location_on),
+                  const SizedBox(height: 16),
+                ],
+
+                // Interest & Networking Section
+                if (_industryController.text.isNotEmpty ||
+                    _skillsController.text.isNotEmpty ||
+                    _networkingGoalsController.text.isNotEmpty) ...[
+                  Text(
+                    'Interests & Networking',
+                    style: GoogleFonts.inter(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w600,
+                      color: scheme.onSurface,
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                ],
+
+                if (_industryController.text.isNotEmpty) ...[
+                  _buildProfileInfo(
+                      'Industry', _industryController.text, Icons.business_center),
+                  const SizedBox(height: 16),
+                ],
+                if (_skillsController.text.isNotEmpty) ...[
+                  _buildProfileInfo(
+                      'Skills & Expertise', _skillsController.text, Icons.psychology),
+                  const SizedBox(height: 16),
+                ],
+                if (_networkingGoalsController.text.isNotEmpty) ...[
+                  _buildProfileInfo(
+                      'Networking Goals', _networkingGoalsController.text, Icons.connect_without_contact),
                   const SizedBox(height: 16),
                 ],
 
@@ -1055,6 +1360,83 @@ class _ProfilePageState extends State<ProfilePage> {
         size: 60,
         color: scheme.onPrimaryContainer,
       ),
+    );
+  }
+
+  // Safe avatar widget that handles errors gracefully
+  Widget _buildSafeAvatar(ColorScheme scheme, {double size = 120}) {
+    if (_avatarUrl == null || _avatarUrl!.isEmpty) {
+      return _buildDefaultAvatar(scheme);
+    }
+
+    return ClipOval(
+      child: Image.network(
+        _avatarUrl!,
+        width: size,
+        height: size,
+        fit: BoxFit.cover,
+        loadingBuilder: (context, child, loadingProgress) {
+          if (loadingProgress == null) return child;
+          return Container(
+            width: size,
+            height: size,
+            color: scheme.primaryContainer,
+            child: Center(
+              child: CircularProgressIndicator(
+                value: loadingProgress.expectedTotalBytes != null
+                    ? loadingProgress.cumulativeBytesLoaded /
+                        loadingProgress.expectedTotalBytes!
+                    : null,
+                color: scheme.primary,
+              ),
+            ),
+          );
+        },
+        errorBuilder: (context, error, stackTrace) {
+          print('Avatar loading error: $error');
+          // Fallback to default avatar on error
+          return _buildDefaultAvatar(scheme);
+        },
+        // Add timeout and retry logic
+        frameBuilder: (context, child, frame, wasSynchronouslyLoaded) {
+          if (wasSynchronouslyLoaded) return child;
+          return AnimatedOpacity(
+            opacity: frame == null ? 0 : 1,
+            duration: const Duration(milliseconds: 300),
+            curve: Curves.easeOut,
+            child: child,
+          );
+        },
+      ),
+    );
+  }
+
+  // Show a confirmation dialog to clear the avatar
+  void _showClearAvatarDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('Clear Avatar'),
+          content: const Text(
+              'Are you sure you want to clear your avatar? This action cannot be undone.'),
+          actions: <Widget>[
+            TextButton(
+              child: const Text('Cancel'),
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+            ),
+            TextButton(
+              child: const Text('Clear'),
+              onPressed: () {
+                Navigator.of(context).pop();
+                _clearAvatar();
+              },
+            ),
+          ],
+        );
+      },
     );
   }
 }

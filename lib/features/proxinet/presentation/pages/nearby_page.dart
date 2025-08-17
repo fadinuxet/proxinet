@@ -11,6 +11,7 @@ import 'package:flutter_blue_plus/flutter_blue_plus.dart';
 import '../../../../core/services/proxinet_settings_service.dart';
 import '../../../../core/utils/geohash.dart';
 import '../../../../core/services/proxinet_ble_service.dart';
+import '../../../../core/services/proxinet_presence_sync_service.dart';
 
 class NearbyPage extends StatefulWidget {
   const NearbyPage({super.key});

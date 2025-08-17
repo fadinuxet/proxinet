@@ -22,6 +22,7 @@ import 'package:proxinet/core/services/serendipity_service.dart';
 import 'package:proxinet/core/services/notification_service.dart';
 import 'package:proxinet/core/services/firebase_repositories.dart';
 import 'package:proxinet/core/services/push_handler.dart';
+import 'package:proxinet/core/services/proxinet_presence_sync_service.dart';
 import 'package:proxinet/features/messaging/domain/services/chat_service.dart';
 import 'package:proxinet/features/messaging/data/repositories/chat_repository.dart';
 

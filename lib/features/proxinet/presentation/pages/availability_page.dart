@@ -175,6 +175,22 @@ class _AvailabilityPageState extends State<AvailabilityPage> {
             ),
           ],
         ),
+        const SizedBox(height: 12),
+        Row(
+          children: [
+            Expanded(
+              child: _VisibilityIconButton(
+                icon: Icons.public,
+                label: 'Everyone',
+                subtitle: 'All users in map area',
+                isSelected: _audience == VisibilityAudience.everyone,
+                color: Colors.green,
+                onTap: () =>
+                    setState(() => _audience = VisibilityAudience.everyone),
+              ),
+            ),
+          ],
+        ),
       ],
     );
   }

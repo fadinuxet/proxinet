@@ -14,6 +14,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Analytics and insights
 - Third-party integrations
 
+## [0.3.0] - 2024-12-19
+
+### Added
+- **Serendipity Engine Foundation**: Interest-based matching and connection suggestions
+- **Enhanced User Profiles**: Industry, skills, and networking goals fields
+- **Smart Post Creation**: Intelligent tag suggestions based on user interests
+- **Interest Matching System**: Algorithm to find users with similar interests in proximity
+- **Event Overlap Detection**: Identify users attending events at the same time
+- **Serendipity Suggestions**: Home page section showing potential connections
+- **Auto-save Profile System**: Automatic saving of profile changes with visual feedback
+
+### Changed
+- **Profile Page**: Redesigned with new interest fields and better UX
+- **Post Composer**: Enhanced with smart tag suggestions and better hints
+- **Home Page**: Added serendipity suggestions section for better user engagement
+- **User Experience**: Improved post-publish flow with success feedback and navigation
+
+### Technical Improvements
+- **New Data Models**: UserInterests class for structured interest data
+- **Enhanced Services**: SerendipityService with matching algorithms
+- **Better State Management**: Improved profile editing and auto-save functionality
+- **Firestore Integration**: Enhanced data structure for interests and networking preferences
+
 ## [0.2.0] - 2024-12-19
 
 ### Added

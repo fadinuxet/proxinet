@@ -31,6 +31,71 @@ class _SerendipityPostComposerPageState
   bool _saving = false;
   List<String> _selectedGroupIds = const [];
 
+  // Get user profile for smart suggestions
+  Future<Map<String, dynamic>?> _getUserProfile() async {
+    try {
+      final user = FirebaseAuth.instance.currentUser;
+      if (user == null) return null;
+
+      final doc = await FirebaseFirestore.instance
+          .collection('profiles')
+          .doc(user.uid)
+          .get();
+
+      if (doc.exists) {
+        return doc.data();
+      }
+      return null;
+    } catch (e) {
+      print('Error getting user profile: $e');
+      return null;
+    }
+  }
+
+  // Generate smart tag suggestions based on user profile and post content
+  List<String> _getSuggestedTags(Map<String, dynamic> profile) {
+    final suggestions = <String>{};
+    
+    // Add industry-based suggestions
+    final industry = profile['industry']?.toString().toLowerCase();
+    if (industry != null && industry.isNotEmpty) {
+      suggestions.add('#$industry');
+      if (industry.contains('tech')) suggestions.add('#technology');
+      if (industry.contains('health')) suggestions.add('#healthcare');
+      if (industry.contains('finance')) suggestions.add('#finance');
+    }
+    
+    // Add skills-based suggestions
+    final skills = profile['skills']?.toString().toLowerCase();
+    if (skills != null && skills.isNotEmpty) {
+      final skillList = skills.split(',').map((s) => s.trim()).where((s) => s.isNotEmpty);
+      for (final skill in skillList) {
+        suggestions.add('#$skill');
+      }
+    }
+    
+    // Add networking goals
+    final goals = profile['networkingGoals']?.toString().toLowerCase();
+    if (goals != null && goals.isNotEmpty) {
+      if (goals.contains('collaborat')) suggestions.add('#collaboration');
+      if (goals.contains('learn')) suggestions.add('#learning');
+      if (goals.contains('network')) suggestions.add('#networking');
+      if (goals.contains('mentor')) suggestions.add('#mentorship');
+    }
+    
+    // Add location-based suggestions
+    final location = profile['location']?.toString().toLowerCase();
+    if (location != null && location.isNotEmpty) {
+      suggestions.add('#$location');
+    }
+    
+    // Add common event-related tags
+    suggestions.addAll(['#meetup', '#networking', '#event']);
+    
+    // Limit to reasonable number of suggestions
+    return suggestions.take(8).toList();
+  }
+
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
@@ -92,11 +157,64 @@ class _SerendipityPostComposerPageState
                 ),
               ),
               const SizedBox(height: 12),
+              
+              // Smart Tag Suggestions
+              FutureBuilder<Map<String, dynamic>?>(
+                future: _getUserProfile(),
+                builder: (context, snapshot) {
+                  if (snapshot.hasData && snapshot.data != null) {
+                    final profile = snapshot.data!;
+                    final suggestedTags = _getSuggestedTags(profile);
+                    
+                    if (suggestedTags.isNotEmpty) {
+                      return Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Suggested Tags',
+                            style: TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w500,
+                              color: scheme.onSurface.withOpacity(0.7),
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          Wrap(
+                            spacing: 8,
+                            runSpacing: 8,
+                            children: suggestedTags.map((tag) {
+                              return ActionChip(
+                                label: Text(tag),
+                                onPressed: () {
+                                  final currentTags = _tags.text.trim();
+                                  if (currentTags.isEmpty) {
+                                    _tags.text = tag;
+                                  } else {
+                                    _tags.text = '$currentTags, $tag';
+                                  }
+                                },
+                                backgroundColor: scheme.primaryContainer,
+                                labelStyle: TextStyle(
+                                  color: scheme.onPrimaryContainer,
+                                  fontSize: 12,
+                                ),
+                              );
+                            }).toList(),
+                          ),
+                          const SizedBox(height: 16),
+                        ],
+                      );
+                    }
+                  }
+                  return const SizedBox.shrink();
+                },
+              ),
+              
               TextField(
                 controller: _tags,
                 decoration: const InputDecoration(
                   labelText: 'Tags',
-                  hintText: '#conference, #Berlin',
+                  hintText: '#conference, #Berlin, #networking',
                   border: OutlineInputBorder(),
                 ),
               ),
@@ -281,17 +399,45 @@ class _SerendipityPostComposerPageState
                               'Post created successfully with ID: ${postRef.id}');
 
                           if (mounted) {
-                            // Show notification if service is available
+                            // Show success notification
                             if (notifier != null) {
                               try {
                                 notifier.showNow(
-                                    title: 'Post published',
-                                    body: 'We\'ll notify you of overlaps');
+                                    title: 'Post published successfully!',
+                                    body: 'Your post is now live and visible to your selected audience');
                               } catch (e) {
                                 print('Failed to show notification: $e');
                               }
                             }
-                            Navigator.of(context).pop();
+                            
+                            // Show success feedback and navigate to posts page
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Row(
+                                  children: [
+                                    const Icon(Icons.check_circle, color: Colors.white),
+                                    const SizedBox(width: 12),
+                                    Expanded(
+                                      child: Text(
+                                        'Post published! Navigating to posts feed...',
+                                        style: const TextStyle(fontWeight: FontWeight.w500),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                backgroundColor: Colors.green,
+                                duration: const Duration(seconds: 3),
+                                behavior: SnackBarBehavior.floating,
+                              ),
+                            );
+                            
+                            // Navigate to posts page after a brief delay to show the success message
+                            Future.delayed(const Duration(milliseconds: 1500), () {
+                              if (mounted) {
+                                // Navigate to posts page instead of just popping back
+                                context.go('/proxinet/serendipity');
+                              }
+                            });
                           }
                         } catch (e) {
                           print('Post creation error: $e');

@@ -8,6 +8,7 @@ import 'package:get_it/get_it.dart';
 import '../../../../core/services/proxinet_presence_service.dart';
 import '../../../../core/services/proxinet_local_store.dart';
 import '../../../../core/services/notification_service.dart';
+import '../../../../core/services/serendipity_service.dart';
 import '../../../messaging/presentation/pages/messages_page.dart';
 
 class ProxinetHomePage extends StatefulWidget {
@@ -150,6 +151,10 @@ class _ProxinetHomePageState extends State<ProxinetHomePage> {
         _buildSectionHeader('Recent Activity'),
         const SizedBox(height: 16),
         _buildRecentActivityCard(),
+        const SizedBox(height: 24),
+        _buildSectionHeader('Serendipity Suggestions'),
+        const SizedBox(height: 16),
+        _buildSerendipitySuggestions(),
       ],
     );
   }
@@ -432,6 +437,106 @@ class _ProxinetHomePageState extends State<ProxinetHomePage> {
           ],
         ),
       ),
+    );
+  }
+
+  Widget _buildSerendipitySuggestions() {
+    return Card(
+      elevation: 2,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(
+                  Icons.lightbulb_outline,
+                  color: _colorScheme.primary,
+                  size: 24,
+                ),
+                const SizedBox(width: 12),
+                Text(
+                  'Serendipity Suggestions',
+                  style: GoogleFonts.inter(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w600,
+                    color: _colorScheme.onSurface,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            _buildSerendipityItem(
+              title: 'Networking Event',
+              subtitle: 'Join a local meetup for tech professionals.',
+              icon: Icons.event,
+              color: _colorScheme.primary,
+            ),
+            const SizedBox(height: 12),
+            _buildSerendipityItem(
+              title: 'New User',
+              subtitle: 'Sarah Chen just joined ProxiNet.',
+              icon: Icons.person_add,
+              color: _colorScheme.secondary,
+            ),
+            const SizedBox(height: 12),
+            _buildSerendipityItem(
+              title: 'Proximity Alert',
+              subtitle: 'You are near a new connection opportunity.',
+              icon: Icons.location_on,
+              color: _colorScheme.tertiary,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSerendipityItem({
+    required String title,
+    required String subtitle,
+    required IconData icon,
+    required Color color,
+  }) {
+    return Row(
+      children: [
+        Container(
+          width: 40,
+          height: 40,
+          decoration: BoxDecoration(
+            color: color.withOpacity(0.1),
+            borderRadius: BorderRadius.circular(10),
+          ),
+          child: Icon(icon, color: color, size: 20),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                title,
+                style: GoogleFonts.inter(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                  color: _colorScheme.onSurface,
+                ),
+              ),
+              Text(
+                subtitle,
+                style: GoogleFonts.inter(
+                  fontSize: 13,
+                  color: _colorScheme.onSurface.withOpacity(0.7),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
     );
   }
 
