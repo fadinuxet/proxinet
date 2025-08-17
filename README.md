@@ -46,7 +46,7 @@ Built with clean architecture principles:
 
 1. Clone the repository:
 ```bash
-git clone https://github.com/yourusername/proxinet.git
+git clone https://github.com/fadinuxet/proxinet.git
 cd proxinet
 ```
 
