@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../core/services/serendipity_models.dart';
+import '../../../../core/services/proxinet_presence_sync_service.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:get_it/get_it.dart';
 
 class AvailabilityPage extends StatefulWidget {
   const AvailabilityPage({super.key});
@@ -18,6 +19,71 @@ class _AvailabilityPageState extends State<AvailabilityPage> {
   VisibilityAudience _audience = VisibilityAudience.firstDegree;
   bool _isSaving = false;
   bool _showGuidelines = false; // Track if we should show guidelines
+  
+  late final ProxinetPresenceSyncService _presenceSync;
+
+  @override
+  void initState() {
+    super.initState();
+    _presenceSync = GetIt.instance<ProxinetPresenceSyncService>();
+    _loadCurrentAvailability();
+  }
+
+  // Load current availability status
+  Future<void> _loadCurrentAvailability() async {
+    try {
+      // Initialize availability from Firestore
+      await _presenceSync.initializeAvailabilityFromFirestore();
+      
+      // Update UI based on current status
+      if (mounted) {
+        setState(() {
+          _available = _presenceSync.isAvailableForConnections;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error loading availability: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
+  // Refresh user's current location
+  Future<void> _refreshLocation() async {
+    try {
+      setState(() => _isSaving = true);
+      
+      // Refresh availability location using the service
+      await _presenceSync.refreshAvailabilityLocation();
+      
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Location updated successfully!'),
+            backgroundColor: Colors.green,
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to update location: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isSaving = false);
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -88,6 +154,68 @@ class _AvailabilityPageState extends State<AvailabilityPage> {
           ),
           _buildVisibilitySelector(),
           const SizedBox(height: 16),
+          
+          // Location Status Indicator
+          if (_available) ...[
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(
+                  color: Theme.of(context).colorScheme.outlineVariant.withOpacity(0.3),
+                ),
+              ),
+              child: Row(
+                children: [
+                  Icon(
+                    Icons.location_on,
+                    color: Theme.of(context).colorScheme.primary,
+                    size: 20,
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Location Services',
+                          style: GoogleFonts.inter(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          'Your current location will be automatically updated when you set availability. This helps others discover you nearby.',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 16),
+            
+            // Refresh Location Button
+            OutlinedButton.icon(
+              onPressed: _isSaving ? null : _refreshLocation,
+              icon: const Icon(Icons.refresh),
+              label: const Text('Refresh My Location'),
+              style: OutlinedButton.styleFrom(
+                padding: const EdgeInsets.symmetric(vertical: 12),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+          ],
+          
           _buildSaveButton(),
           if (!_showGuidelines && _available) ...[
             const SizedBox(height: 12),
@@ -428,31 +556,18 @@ class _AvailabilityPageState extends State<AvailabilityPage> {
       // Ensure auth is fresh
       await FirebaseAuth.instance.currentUser?.reload();
       final user = FirebaseAuth.instance.currentUser;
-      final uid = user?.uid;
-      if (uid == null) {
+      if (user == null) {
         throw Exception('User not authenticated');
       }
 
-      final untilDate = _available
-          ? DateTime.now().add(Duration(hours: _hours.toInt()))
-          : null;
+      // Use the presence sync service for proper integration
+      await _presenceSync.setAvailabilityForConnections(
+        _available,
+        audience: _audience,
+        hours: _hours.toInt(),
+      );
 
-      final data = <String, dynamic>{
-        'userId': uid,
-        'isAvailable': _available,
-        'until': untilDate != null ? Timestamp.fromDate(untilDate) : null,
-        'audience': _audience.name,
-        'customGroupIds':
-            _audience == VisibilityAudience.custom ? <String>[] : <String>[],
-        'updatedAt': FieldValue.serverTimestamp(),
-      };
-
-      await FirebaseFirestore.instance
-          .collection('availability')
-          .doc(uid)
-          .set(data, SetOptions(merge: true));
-
-      // Show success popup instead of snackbar
+      // Show success popup
       if (mounted) {
         await showDialog(
           context: context,
@@ -466,7 +581,7 @@ class _AvailabilityPageState extends State<AvailabilityPage> {
             ),
             content: Text(
               _available
-                  ? 'Your availability status has been updated! People can now see that you\'re open to connect.'
+                  ? 'Your availability status has been updated! People can now see that you\'re open to connect and your location has been updated.'
                   : 'Your availability status has been updated to closed.',
             ),
             actions: [

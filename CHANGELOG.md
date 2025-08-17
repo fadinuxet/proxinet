@@ -14,6 +14,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Analytics and insights
 - Third-party integrations
 
+## [0.3.1] - 2024-12-19
+
+### Fixed
+- **Availability System Integration**: Fixed critical integration issue between availability page and presence sync service
+- **Location Updates**: Availability now automatically updates user location in both Firestore collections
+- **Map Discovery**: Users setting availability are now properly discoverable on the map
+- **Service Integration**: Availability page now uses ProxinetPresenceSyncService instead of direct Firestore operations
+- **User Experience**: Added location status indicators and manual refresh options
+
+### Changed
+- **Availability Page**: Enhanced with location services info and refresh location button
+- **Data Flow**: Improved synchronization between availability and user profile collections
+- **Error Handling**: Better error messages and fallbacks for location services
+
+### Technical Improvements
+- **Service Architecture**: Proper dependency injection and service integration
+- **Location Management**: Automatic GPS location fetching and storage
+- **Real-time Updates**: Map shows available users with current location data
+
 ## [0.3.0] - 2024-12-19
 
 ### Added
