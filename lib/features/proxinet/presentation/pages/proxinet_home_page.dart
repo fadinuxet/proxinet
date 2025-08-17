@@ -51,6 +51,7 @@ class _ProxinetHomePageState extends State<ProxinetHomePage> {
       appBar: _buildAppBar(),
       body: _buildCurrentTab(),
       bottomNavigationBar: _buildBottomNavigationBar(),
+      extendBody: false,
     );
   }
 
@@ -130,7 +131,10 @@ class _ProxinetHomePageState extends State<ProxinetHomePage> {
       const MessagesPage(),
       const _ProfileTab(),
     ];
-    return SafeArea(child: tabs[_currentTabIndex]);
+    return SafeArea(
+      bottom: false, // Don't add bottom safe area since we handle it in bottom navigation
+      child: tabs[_currentTabIndex],
+    );
   }
 
   Widget _buildDiscoverTab() {
@@ -484,26 +488,42 @@ class _ProxinetHomePageState extends State<ProxinetHomePage> {
   }
 
   Widget _buildBottomNavigationBar() {
-    return BottomNavigationBar(
-      currentIndex: _currentTabIndex,
-      onTap: (index) => setState(() => _currentTabIndex = index),
-      type: BottomNavigationBarType.fixed,
-      selectedItemColor: _colorScheme.primary,
-      unselectedItemColor: _colorScheme.onSurface.withOpacity(0.6),
-      items: const [
-        BottomNavigationBarItem(
-          icon: Icon(Icons.explore),
-          label: 'Discover',
+    return SafeArea(
+      child: Container(
+        decoration: BoxDecoration(
+          color: Theme.of(context).scaffoldBackgroundColor,
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.1),
+              blurRadius: 8,
+              offset: const Offset(0, -2),
+            ),
+          ],
         ),
-        BottomNavigationBarItem(
-          icon: Icon(Icons.message),
-          label: 'Messages',
+        child: BottomNavigationBar(
+          currentIndex: _currentTabIndex,
+          onTap: (index) => setState(() => _currentTabIndex = index),
+          type: BottomNavigationBarType.fixed,
+          selectedItemColor: _colorScheme.primary,
+          unselectedItemColor: _colorScheme.onSurface.withOpacity(0.6),
+          backgroundColor: Colors.transparent,
+          elevation: 0,
+          items: const [
+            BottomNavigationBarItem(
+              icon: Icon(Icons.explore),
+              label: 'Discover',
+            ),
+            BottomNavigationBarItem(
+              icon: Icon(Icons.message),
+              label: 'Messages',
+            ),
+            BottomNavigationBarItem(
+              icon: Icon(Icons.person),
+              label: 'Profile',
+            ),
+          ],
         ),
-        BottomNavigationBarItem(
-          icon: Icon(Icons.person),
-          label: 'Profile',
-        ),
-      ],
+      ),
     );
   }
 
@@ -694,29 +714,30 @@ class _ProxinetHomePageState extends State<ProxinetHomePage> {
     }
   }
 
-void _handleNotificationTap(NotificationItem notification) {
-  _notificationService.markAsRead(notification.id);
+  void _handleNotificationTap(NotificationItem notification) {
+    _notificationService.markAsRead(notification.id);
 
-  switch (notification.type) {
-    case NotificationType.connection:
-      context.push('/proxinet');
-      break;
-    case NotificationType.discovery:
-      context.push('/proxinet');
-      break;
-    case NotificationType.proximity:
-      context.push('/proxinet');
-      break;
-    case NotificationType.location:
-      context.push('/proxinet/map');
-      break;
-    case NotificationType.general:
-      // Stay on current page for general notifications
-      break;
+    switch (notification.type) {
+      case NotificationType.connection:
+        context.push('/proxinet');
+        break;
+      case NotificationType.discovery:
+        context.push('/proxinet');
+        break;
+      case NotificationType.proximity:
+        context.push('/proxinet');
+        break;
+      case NotificationType.location:
+        context.push('/proxinet/map');
+        break;
+      case NotificationType.general:
+        // Stay on current page for general notifications
+        break;
+    }
   }
 }
 
-class _ProfileTab extends void StatelessWidget {
+class _ProfileTab extends StatelessWidget {
   const _ProfileTab();
 
   @override
@@ -726,14 +747,15 @@ class _ProfileTab extends void StatelessWidget {
     return ListView(
       padding: const EdgeInsets.all(16),
       children: [
-        buildSectionHeader(
+        _buildSectionHeader(
           title: 'Profile',
           subtitle: 'Manage your personal information',
           icon: Icons.person,
           color: scheme.primary,
         ),
         const SizedBox(height: 16),
-        buildActionCard(
+        _buildActionCard(
+          context: context,
           title: 'View Profile',
           subtitle: 'See and edit your profile',
           icon: Icons.person,
@@ -741,7 +763,8 @@ class _ProfileTab extends void StatelessWidget {
           onTap: () => context.go('/proxinet/profile'),
         ),
         const SizedBox(height: 16),
-        buildActionCard(
+        _buildActionCard(
+          context: context,
           title: 'My Posts',
           subtitle: 'View and manage your posts',
           icon: Icons.article,
@@ -749,7 +772,8 @@ class _ProfileTab extends void StatelessWidget {
           onTap: () => context.go('/proxinet/posts'),
         ),
         const SizedBox(height: 16),
-        buildActionCard(
+        _buildActionCard(
+          context: context,
           title: 'Availability',
           subtitle: 'Set your connection status',
           icon: Icons.person_add,
@@ -757,7 +781,8 @@ class _ProfileTab extends void StatelessWidget {
           onTap: () => context.go('/proxinet/availability'),
         ),
         const SizedBox(height: 16),
-        buildActionCard(
+        _buildActionCard(
+          context: context,
           title: 'Custom Groups',
           subtitle: 'Manage your audience groups',
           icon: Icons.group,
@@ -765,7 +790,8 @@ class _ProfileTab extends void StatelessWidget {
           onTap: () => context.go('/proxinet/groups'),
         ),
         const SizedBox(height: 16),
-        buildActionCard(
+        _buildActionCard(
+          context: context,
           title: 'My Contacts',
           subtitle: 'View your network connections',
           icon: Icons.people,
@@ -776,7 +802,7 @@ class _ProfileTab extends void StatelessWidget {
     );
   }
 
-  Widget buildSectionHeader({
+  Widget _buildSectionHeader({
     required String title,
     required String subtitle,
     required IconData icon,
@@ -818,7 +844,8 @@ class _ProfileTab extends void StatelessWidget {
     );
   }
 
-  Widget buildActionCard({
+  Widget _buildActionCard({
+    required BuildContext context,
     required String title,
     required String subtitle,
     required IconData icon,

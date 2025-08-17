@@ -17,6 +17,7 @@ class _AvailabilityPageState extends State<AvailabilityPage> {
   double _hours = 2;
   VisibilityAudience _audience = VisibilityAudience.firstDegree;
   bool _isSaving = false;
+  bool _showGuidelines = false; // Track if we should show guidelines
 
   @override
   Widget build(BuildContext context) {
@@ -88,6 +89,33 @@ class _AvailabilityPageState extends State<AvailabilityPage> {
           _buildVisibilitySelector(),
           const SizedBox(height: 16),
           _buildSaveButton(),
+          if (!_showGuidelines && _available) ...[
+            const SizedBox(height: 12),
+            Center(
+              child: Text(
+                '💡 Save to see connection guidelines',
+                style: GoogleFonts.inter(
+                  fontSize: 12,
+                  color: Theme.of(context).colorScheme.onSurface.withOpacity(0.5),
+                ),
+              ),
+            ),
+          ],
+          if (_showGuidelines) ...[
+            const SizedBox(height: 24),
+            _buildConnectionGuidelines(),
+            const SizedBox(height: 16),
+            Center(
+              child: TextButton.icon(
+                onPressed: () => setState(() => _showGuidelines = false),
+                icon: const Icon(Icons.keyboard_arrow_up),
+                label: const Text('Hide Guidelines'),
+                style: TextButton.styleFrom(
+                  foregroundColor: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
+                ),
+              ),
+            ),
+          ],
         ],
       ),
     );
@@ -187,6 +215,194 @@ class _AvailabilityPageState extends State<AvailabilityPage> {
     );
   }
 
+  Widget _buildConnectionGuidelines() {
+    final scheme = Theme.of(context).colorScheme;
+    
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: scheme.surfaceVariant.withOpacity(0.3),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: scheme.outlineVariant.withOpacity(0.3),
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(
+                Icons.lightbulb_outline,
+                color: scheme.primary,
+                size: 24,
+              ),
+              const SizedBox(width: 12),
+              Text(
+                'How to Connect & Work Together',
+                style: GoogleFonts.inter(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w700,
+                  color: scheme.onSurface,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          _buildGuidelineItem(
+            icon: Icons.near_me,
+            title: 'Enable Nearby Discovery',
+            description: 'Turn on nearby discovery to find people physically near you',
+            action: 'Go to Nearby Page',
+            onAction: () => context.push('/proxinet/nearby'),
+            scheme: scheme,
+          ),
+          const SizedBox(height: 12),
+          _buildGuidelineItem(
+            icon: Icons.map,
+            title: 'Use the Map View',
+            description: 'See nearby people on a map and connect with them',
+            action: 'Open Map',
+            onAction: () => context.push('/proxinet/map'),
+            scheme: scheme,
+          ),
+          const SizedBox(height: 12),
+          _buildGuidelineItem(
+            icon: Icons.message,
+            title: 'Start Conversations',
+            description: 'Send connection requests and start meaningful conversations',
+            action: 'View Messages',
+            onAction: () => context.push('/proxinet/messages'),
+            scheme: scheme,
+          ),
+          const SizedBox(height: 12),
+          _buildGuidelineItem(
+            icon: Icons.group,
+            title: 'Join Groups',
+            description: 'Connect with like-minded people in your industry or interests',
+            action: 'Browse Groups',
+            onAction: () => context.push('/proxinet/groups'),
+            scheme: scheme,
+          ),
+          const SizedBox(height: 12),
+          _buildGuidelineItem(
+            icon: Icons.people,
+            title: 'See Available People',
+            description: 'Browse all people who are currently available to connect',
+            action: 'View Available',
+            onAction: () => context.push('/proxinet/available-people'),
+            scheme: scheme,
+          ),
+          const SizedBox(height: 16),
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: scheme.primaryContainer.withOpacity(0.3),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                color: scheme.primary.withOpacity(0.2),
+              ),
+            ),
+            child: Row(
+              children: [
+                Icon(
+                  Icons.tips_and_updates,
+                  color: scheme.primary,
+                  size: 20,
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    'Pro tip: Combine availability with nearby discovery for maximum networking opportunities!',
+                    style: GoogleFonts.inter(
+                      fontSize: 14,
+                      color: scheme.onSurface,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildGuidelineItem({
+    required IconData icon,
+    required String title,
+    required String description,
+    required String action,
+    required VoidCallback onAction,
+    required ColorScheme scheme,
+  }) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: scheme.surface,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: scheme.outlineVariant.withOpacity(0.3),
+        ),
+      ),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: scheme.primaryContainer,
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Icon(
+              icon,
+              color: scheme.onPrimaryContainer,
+              size: 20,
+            ),
+          ),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: GoogleFonts.inter(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                    color: scheme.onSurface,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  description,
+                  style: GoogleFonts.inter(
+                    fontSize: 14,
+                    color: scheme.onSurface.withOpacity(0.7),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 12),
+          TextButton(
+            onPressed: onAction,
+            style: TextButton.styleFrom(
+              foregroundColor: scheme.primary,
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            ),
+            child: Text(
+              action,
+              style: GoogleFonts.inter(
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   Future<void> _saveAvailability() async {
     if (_isSaving) return;
 
@@ -239,7 +455,13 @@ class _AvailabilityPageState extends State<AvailabilityPage> {
             ),
             actions: [
               FilledButton(
-                onPressed: () => Navigator.of(context).pop(),
+                onPressed: () {
+                  Navigator.of(context).pop();
+                  // Show guidelines after successful save
+                  if (_available) {
+                    setState(() => _showGuidelines = true);
+                  }
+                },
                 child: const Text('Great!'),
               ),
             ],

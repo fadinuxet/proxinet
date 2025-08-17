@@ -50,6 +50,8 @@ Future<void> _setupDependencies() async {
       () => ProxinetPresenceService());
   sl.registerLazySingleton<ProxinetSettingsService>(
       () => ProxinetSettingsService());
+  sl.registerLazySingleton<ProxinetPresenceSyncService>(
+      () => ProxinetPresenceSyncService());
   sl.registerLazySingleton<ProxinetBleService>(() => ProxinetBleService());
   sl.registerLazySingleton<ProxinetMatchApi>(
       () => ProxinetMatchApiStub(sl<ProxinetLocalStore>()));

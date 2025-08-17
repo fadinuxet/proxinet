@@ -7,27 +7,34 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-### Added
-- Initial project setup with Flutter 3.3.0+
-- Core architecture with feature-based organization
-- Firebase integration (Auth, Firestore, Messaging, Storage)
-- Bluetooth Low Energy (BLE) service for proximity detection
-- OAuth integration for Google and Apple Sign-In
-- Secure storage and encryption services
-- Geolocation and mapping capabilities
-- Contact and calendar integration services
-- Push notification system
-- Chat and messaging infrastructure
-- Offline persistence support
-- Material Design 3 with custom color scheme
+### Planned
+- Enhanced privacy controls
+- Advanced proximity algorithms
+- Social networking features
+- Analytics and insights
+- Third-party integrations
 
-### Technical
-- Dependency injection with GetIt
-- Clean architecture with domain, data, and presentation layers
-- GoRouter for navigation
-- Comprehensive service layer for business logic
-- Firebase security rules and offline persistence
-- Cross-platform support (iOS, Android, Web, macOS)
+## [0.2.0] - 2024-12-19
+
+### Added
+- **Tabbed Map Interface** - Separated "Around Me" (BLE discovery) and "Available to Connect" (availability status) into distinct tabs
+- **Enhanced Map Experience** - Three dedicated tabs: Around Me, Available, and Combined view
+- **Improved User Experience** - Clear separation of proximity discovery and availability features
+- **ProxinetPresenceSyncService** - New service for better presence management and synchronization
+- **BLE Diagnostic Page** - New diagnostic interface for Bluetooth troubleshooting
+- **Available People Page** - Dedicated page for viewing available users
+
+### Changed
+- **Map Page Restructure** - Completely redesigned map interface with tab-based navigation
+- **Presence Management** - Enhanced presence synchronization using dedicated service
+- **Navigation Flow** - Improved routing and page organization
+- **Service Architecture** - Better separation of concerns with dedicated services
+
+### Technical Improvements
+- **Tab Controller Integration** - Proper lifecycle management for tab-based navigation
+- **Service Integration** - Better integration with ProxinetPresenceSyncService
+- **Code Organization** - Improved separation of map functionality into focused components
+- **Performance Optimization** - Each tab loads only relevant data
 
 ## [0.1.0] - 2024-12-19
 

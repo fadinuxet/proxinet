@@ -77,33 +77,44 @@ class ProxinetBleService {
 
       // Start advertising an ephemeral token for Proxinet peers
       try {
+        _discovery.add('Starting BLE advertising with service UUID: ${serviceGuid.toString()}');
         await _startAdvertising(serviceGuid);
-        _discovery.add('Started advertising Proxinet service');
+        _discovery.add('✅ Started advertising Proxinet service successfully');
       } catch (e) {
-        _discovery.add('Advertising failed: $e');
-        _discovery.add('Continuing with scanning only (passive mode)');
+        _discovery.add('❌ Advertising failed: $e');
+        _discovery.add('⚠️ Continuing with scanning only (passive mode)');
         // Continue with scanning even if advertising fails
       }
 
       // Start scanning
       try {
+        _discovery.add('🔍 Starting BLE scan for service UUID: ${serviceGuid.toString()}');
         await FlutterBluePlus.startScan(
           withServices: [serviceGuid],
           timeout: const Duration(seconds: 0),
         );
-        _discovery.add('Scanning for Proxinet peers…');
+        _discovery.add('✅ Scanning for Proxinet peers started successfully');
 
         FlutterBluePlus.scanResults.listen((results) {
+          _discovery.add('📡 Scan results: ${results.length} devices found');
           for (final r in results) {
             try {
               final ad = r.advertisementData;
+              _discovery.add('🔍 Device: ${r.device.name ?? 'Unknown'} (${r.device.id})');
+              _discovery.add('   Services: ${ad.serviceUuids.map((g) => g.toString()).join(', ')}');
+              _discovery.add('   Service Data: ${ad.serviceData.keys.map((g) => g.toString()).join(', ')}');
+              
               final hasService = ad.serviceUuids
                       .map((g) => g.toString().toLowerCase())
                       .contains(serviceGuid.toString().toLowerCase()) ||
                   ad.serviceData.keys
                       .map((g) => g.toString().toLowerCase())
                       .contains(serviceGuid.toString().toLowerCase());
-              if (!hasService) continue;
+              
+              if (!hasService) {
+                _discovery.add('   ❌ Not a Proxinet device (no matching service)');
+                continue;
+              }
 
               final tokenBytes = ad.serviceData[serviceGuid];
               final token = tokenBytes == null
@@ -115,9 +126,9 @@ class ProxinetBleService {
               final peerLabel = token.isNotEmpty
                   ? 'Proxinet peer (token $token…)'
                   : 'Proxinet peer';
-              _discovery.add('$peerLabel • RSSI $rssi');
+              _discovery.add('✅ $peerLabel • RSSI $rssi');
               if (token.isNotEmpty) {
-                _discovery.add('TOKEN:$token');
+                _discovery.add('🎯 TOKEN:$token');
               }
             } catch (e) {
               _discovery.add('Error processing scan result: $e');

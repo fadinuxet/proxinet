@@ -18,6 +18,9 @@ import '../features/proxinet/presentation/pages/contacts_page.dart';
 import '../features/proxinet/presentation/pages/notifications_page.dart';
 import '../features/proxinet/presentation/pages/user_guide_page.dart';
 import '../features/proxinet/presentation/pages/simple_guide_page.dart';
+import '../features/proxinet/presentation/pages/ble_diagnostic_page.dart';
+import '../features/messaging/presentation/pages/messages_page.dart';
+import '../features/proxinet/presentation/pages/available_people_page.dart';
 
 class ProxinetRouter {
   static final GlobalKey<NavigatorState> navKey = GlobalKey<NavigatorState>();
@@ -38,6 +41,8 @@ class ProxinetRouter {
   static const String notifications = '/notifications';
   static const String userGuide = '/guide';
   static const String simpleGuide = '/simple-guide';
+  static const String bleDiagnostic = '/proxinet/ble-diagnostic';
+  static const String messages = '/proxinet/messages';
 
   static final GoRouter router = GoRouter(
     navigatorKey: navKey,
@@ -88,8 +93,16 @@ class ProxinetRouter {
         builder: (context, state) => const NearbyPage(),
       ),
       GoRoute(
-        path: referrals,
-        builder: (context, state) => const ReferralsPage(),
+        path: bleDiagnostic,
+        builder: (context, state) => const BleDiagnosticPage(),
+      ),
+      GoRoute(
+        path: messages,
+        builder: (context, state) => const MessagesPage(),
+      ),
+      GoRoute(
+        path: availablePeople,
+        builder: (context, state) => const AvailablePeoplePage(),
       ),
       GoRoute(
         path: groups,

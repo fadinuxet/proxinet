@@ -22,6 +22,7 @@ class NearbyPage extends StatefulWidget {
 class _NearbyPageState extends State<NearbyPage> {
   // State variables
   bool _sharing = false;
+  bool _connecting = false; // New state for connection process
   double _radiusKm = 1.0;
   final List<String> _discovered = [];
   double? _lat;
@@ -34,12 +35,16 @@ class _NearbyPageState extends State<NearbyPage> {
   final _firestore = FirebaseFirestore.instance;
   final _auth = FirebaseAuth.instance;
   final _functions = FirebaseFunctions.instance;
+  final _presenceSync = GetIt.instance<ProxinetPresenceSyncService>();
 
   @override
   void initState() {
     super.initState();
     _colorScheme = Theme.of(context).colorScheme;
     _initialize();
+    
+    // Listen to presence changes from other pages
+    _presenceSync.addListener(_onPresenceChanged);
   }
 
   Future<void> _initialize() async {
@@ -49,11 +54,11 @@ class _NearbyPageState extends State<NearbyPage> {
 
   Future<void> _loadSettings() async {
     final km = await _settings.getPrecisionKm();
-    final sharingEnabled = await _settings.isPresenceEnabled();
+    await _presenceSync.initializeFromFirestore();
     if (!mounted) return;
     setState(() {
-      _radiusKm = km.clamp(0.5, 10.0);
-      _sharing = sharingEnabled;
+      _radiusKm = _presenceSync.radiusKm;
+      _sharing = _presenceSync.isPresenceEnabled;
     });
   }
 
@@ -66,6 +71,15 @@ class _NearbyPageState extends State<NearbyPage> {
         setState(() => _discovered.insert(0, e));
       }
     });
+  }
+
+  void _onPresenceChanged() {
+    if (mounted) {
+      setState(() {
+        _sharing = _presenceSync.isPresenceEnabled;
+        _radiusKm = _presenceSync.radiusKm;
+      });
+    }
   }
 
   Future<void> _resolveToken(String token) async {
@@ -84,6 +98,9 @@ class _NearbyPageState extends State<NearbyPage> {
   }
 
   Future<void> _toggleSharing(bool enable) async {
+    // Prevent multiple clicks while connecting
+    if (_connecting) return;
+    
     if (enable) {
       await _enableSharing();
     } else {
@@ -93,6 +110,11 @@ class _NearbyPageState extends State<NearbyPage> {
 
   Future<void> _enableSharing() async {
     try {
+      // Set connecting state to prevent multiple clicks
+      if (mounted) {
+        setState(() => _connecting = true);
+      }
+
       if (!await _checkPermissions()) return;
       if (!await _checkBluetooth()) return;
 
@@ -103,17 +125,27 @@ class _NearbyPageState extends State<NearbyPage> {
       _lng = position.longitude;
 
       await _ble.startEventMode();
-      await _updateFirestorePresence(true);
+      await _presenceSync.enablePresence(
+        latitude: position.latitude,
+        longitude: position.longitude,
+        radiusKm: _radiusKm,
+      );
       await _settings.setPresenceEnabled(true);
 
       if (mounted) {
-        setState(() => _sharing = true);
+        setState(() {
+          _sharing = true;
+          _connecting = false; // Clear connecting state
+        });
         _showSnackBar(
           'Nearby discovery enabled successfully!',
           Colors.green,
         );
       }
     } catch (e) {
+      if (mounted) {
+        setState(() => _connecting = false); // Clear connecting state on error
+      }
       _handleSharingError(e);
     }
   }
@@ -155,14 +187,68 @@ class _NearbyPageState extends State<NearbyPage> {
 
     if (!await FlutterBluePlus.isOn) {
       if (mounted) {
-        _showSnackBar(
-          'Please turn on Bluetooth',
-          Colors.orange,
-        );
+        // Show dialog to enable Bluetooth
+        final shouldEnable = await _showBluetoothEnableDialog();
+        if (shouldEnable) {
+          try {
+            // Try to enable Bluetooth (this may not work on all devices)
+            await FlutterBluePlus.turnOn();
+            // Wait a moment for Bluetooth to initialize
+            await Future.delayed(const Duration(seconds: 2));
+            // Check if it's now on
+            if (await FlutterBluePlus.isOn) {
+              return true;
+            }
+          } catch (e) {
+            debugPrint('Could not enable Bluetooth programmatically: $e');
+          }
+          
+          // If we can't enable it programmatically, show instructions
+          if (mounted) {
+            _showSnackBar(
+              'Please enable Bluetooth in your device settings',
+              Colors.orange,
+              action: SnackBarAction(
+                label: 'Settings',
+                onPressed: openAppSettings,
+              ),
+            );
+          }
+        }
       }
       return false;
     }
     return true;
+  }
+
+  Future<bool> _showBluetoothEnableDialog() async {
+    return await showDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => AlertDialog(
+        title: Row(
+          children: [
+            Icon(Icons.bluetooth, color: Theme.of(context).colorScheme.primary),
+            const SizedBox(width: 12),
+            const Text('Enable Bluetooth'),
+          ],
+        ),
+        content: const Text(
+          'Bluetooth is required for nearby discovery. Would you like to enable it now?',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton.icon(
+            onPressed: () => Navigator.of(context).pop(true),
+            icon: const Icon(Icons.bluetooth),
+            label: const Text('Enable'),
+          ),
+        ],
+      ),
+    ) ?? false;
   }
 
   Future<Position?> _getCurrentPosition() async {
@@ -231,18 +317,29 @@ class _NearbyPageState extends State<NearbyPage> {
 
   Future<void> _disableSharing() async {
     try {
+      // Set connecting state to prevent multiple clicks
+      if (mounted) {
+        setState(() => _connecting = true);
+      }
+
       await _ble.stopEventMode();
-      await _updateFirestorePresence(false);
+      await _presenceSync.disablePresence();
       await _settings.setPresenceEnabled(false);
 
       if (mounted) {
-        setState(() => _sharing = false);
+        setState(() {
+          _sharing = false;
+          _connecting = false; // Clear connecting state
+        });
         _showSnackBar(
           'Nearby discovery disabled',
           Colors.blue,
         );
       }
     } catch (e) {
+      if (mounted) {
+        setState(() => _connecting = false); // Clear connecting state on error
+      }
       debugPrint('Disable sharing error: $e');
       if (mounted) {
         _showSnackBar(
@@ -286,6 +383,12 @@ class _NearbyPageState extends State<NearbyPage> {
         action: action,
       ),
     );
+  }
+
+  @override
+  void dispose() {
+    _presenceSync.removeListener(_onPresenceChanged);
+    super.dispose();
   }
 
   @override
@@ -338,6 +441,14 @@ class _NearbyPageState extends State<NearbyPage> {
         icon: const Icon(Icons.arrow_back),
         onPressed: () => Navigator.maybePop(context) ?? context.go('/proxinet'),
       ),
+      actions: [
+        IconButton(
+          icon: const Icon(Icons.bluetooth_searching),
+          onPressed: () => context.push('/proxinet/ble-diagnostic'),
+          tooltip: 'BLE Diagnostic',
+        ),
+        const SizedBox(width: 8),
+      ],
     );
   }
 
@@ -355,10 +466,29 @@ class _NearbyPageState extends State<NearbyPage> {
 
   Widget _buildSharingToggle() {
     return SwitchListTile(
-      title: const Text('Share Nearby'),
-      subtitle: const Text('Enable mutual discovery within a radius'),
+      title: Row(
+        children: [
+          const Text('Share Nearby'),
+          if (_connecting) ...[
+            const SizedBox(width: 8),
+            SizedBox(
+              width: 16,
+              height: 16,
+              child: CircularProgressIndicator(
+                strokeWidth: 2,
+                valueColor: AlwaysStoppedAnimation<Color>(_colorScheme.primary),
+              ),
+            ),
+          ],
+        ],
+      ),
+      subtitle: Text(
+        _connecting 
+          ? 'Connecting...' 
+          : 'Enable mutual discovery within a radius'
+      ),
       value: _sharing,
-      onChanged: _toggleSharing,
+      onChanged: _connecting ? null : _toggleSharing, // Disable while connecting
     );
   }
 
@@ -366,17 +496,22 @@ class _NearbyPageState extends State<NearbyPage> {
     return ListTile(
       title: const Text('Radius'),
       subtitle: Text('${_radiusKm.toStringAsFixed(1)} km'),
-      trailing: SizedBox(
-        width: 220,
-        child: Slider(
-          value: _radiusKm,
-          min: 0.1,
-          max: 10,
-          divisions: 99,
-          onChanged: (v) => setState(() => _radiusKm = v),
-          onChangeEnd: (v) => _settings.setPrecisionKm(v),
+              trailing: SizedBox(
+          width: 220,
+          child: Slider(
+            value: _radiusKm,
+            min: 0.1,
+            max: 10,
+            divisions: 99,
+            onChanged: (v) => setState(() => _radiusKm = v),
+            onChangeEnd: (v) async {
+              await _settings.setPrecisionKm(v);
+              if (_sharing) {
+                await _presenceSync.updateRadius(v);
+              }
+            },
+          ),
         ),
-      ),
     );
   }
 
