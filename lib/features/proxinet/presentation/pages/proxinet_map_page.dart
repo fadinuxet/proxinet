@@ -604,10 +604,14 @@ class _ProxinetMapPageState extends State<ProxinetMapPage> with TickerProviderSt
         .listen((snapshot) async {
       final availableUsers = <Map<String, dynamic>>[];
       
+      print('Loading available users: ${snapshot.docs.length} documents found');
+      
       for (final doc in snapshot.docs) {
         try {
           final data = doc.data();
           final userId = doc.id;
+          
+          print('Processing user $userId: ${data.toString()}');
           
           // Check if location data is directly in availability document
           double? lat = data['latitude'] as double?;
@@ -627,10 +631,15 @@ class _ProxinetMapPageState extends State<ProxinetMapPage> with TickerProviderSt
                 lat = profileData['latitude'] as double?;
                 lng = profileData['longitude'] as double?;
                 userName = profileData['displayName'] ?? 'Available User';
+                print('Got location from profile: lat=$lat, lng=$lng');
+              } else {
+                print('User profile does not exist for $userId');
               }
             } catch (e) {
               print('Error loading user profile: $e');
             }
+          } else {
+            print('Got location from availability: lat=$lat, lng=$lng');
           }
           
           // Only add user if we have valid location data
@@ -644,13 +653,16 @@ class _ProxinetMapPageState extends State<ProxinetMapPage> with TickerProviderSt
               'audience': data['audience'] ?? 'firstDegree',
               'until': data['until'],
             });
+            print('Added user $userId to available users list');
           } else {
-            print('User $userId has no valid location data');
+            print('User $userId has no valid location data - skipping');
           }
         } catch (e) {
           print('Error loading available user: $e');
         }
       }
+      
+      print('Total available users loaded: ${availableUsers.length}');
       
       if (mounted) {
         setState(() {
@@ -1599,11 +1611,13 @@ class _ProxinetMapPageState extends State<ProxinetMapPage> with TickerProviderSt
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
+        titlePadding: const EdgeInsets.fromLTRB(20, 20, 20, 8),
+        contentPadding: const EdgeInsets.fromLTRB(20, 8, 20, 16),
         title: Row(
           children: [
             Container(
-              width: 32,
-              height: 32,
+              width: 28,
+              height: 28,
               decoration: BoxDecoration(
                 color: color,
                 shape: BoxShape.circle,
@@ -1612,27 +1626,27 @@ class _ProxinetMapPageState extends State<ProxinetMapPage> with TickerProviderSt
               child: const Icon(
                 Icons.person_pin_circle,
                 color: Colors.white,
-                size: 18,
+                size: 16,
               ),
             ),
-            const SizedBox(width: 12),
+            const SizedBox(width: 10),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
                 children: [
                   Text(
-                    'Nearby User ${index + 1}',
+                    user['name'] ?? 'Nearby User ${index + 1}',
                     style: GoogleFonts.inter(
-                      fontSize: 18,
+                      fontSize: 16,
                       fontWeight: FontWeight.w600,
                     ),
                   ),
                   Text(
-                    'Tap to interact',
+                    '${_calculateDistance(user['lat'], user['lng']).toStringAsFixed(1)}m away',
                     style: TextStyle(
-                      fontSize: 12,
+                      fontSize: 11,
                       color: scheme.onSurface.withOpacity(0.6),
-                      fontWeight: FontWeight.w400,
                     ),
                   ),
                 ],
@@ -1644,35 +1658,14 @@ class _ProxinetMapPageState extends State<ProxinetMapPage> with TickerProviderSt
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              'This person is nearby and available for connection.',
-              style: TextStyle(
-                color: scheme.onSurface.withOpacity(0.7),
-              ),
-            ),
-            const SizedBox(height: 16),
             Row(
               children: [
-                Icon(Icons.location_on, color: scheme.primary, size: 16),
-                const SizedBox(width: 8),
+                Icon(Icons.signal_cellular_alt, color: color, size: 14),
+                const SizedBox(width: 6),
                 Text(
-                  'Distance: ${_calculateDistance(user['lat'], user['lng']).toStringAsFixed(1)}m',
+                  'Signal: ${_getSignalStrength(user)}',
                   style: TextStyle(
-                    fontSize: 12,
-                    color: scheme.onSurface.withOpacity(0.6),
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 8),
-            Row(
-              children: [
-                Icon(Icons.signal_cellular_alt, color: color, size: 16),
-                const SizedBox(width: 8),
-                Text(
-                  'Signal Strength: ${_getSignalStrength(user)}',
-                  style: TextStyle(
-                    fontSize: 12,
+                    fontSize: 11,
                     color: scheme.onSurface.withOpacity(0.6),
                   ),
                 ),
@@ -1683,48 +1676,53 @@ class _ProxinetMapPageState extends State<ProxinetMapPage> with TickerProviderSt
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(),
-            child: const Text('Cancel'),
+            child: const Text('Close'),
+            style: TextButton.styleFrom(padding: const EdgeInsets.symmetric(horizontal: 12)),
           ),
-          // View Profile Button
           OutlinedButton.icon(
             onPressed: () {
               Navigator.of(context).pop();
               _viewUserProfile(user);
             },
-            icon: const Icon(Icons.person),
+            icon: const Icon(Icons.person, size: 16),
             label: const Text('Profile'),
             style: OutlinedButton.styleFrom(
               foregroundColor: scheme.primary,
               side: BorderSide(color: scheme.primary),
+              padding: const EdgeInsets.symmetric(horizontal: 12),
             ),
           ),
-          // Add to Contacts Button
-          OutlinedButton.icon(
-            onPressed: () {
-              Navigator.of(context).pop();
-              _addToContacts(user);
-            },
-            icon: const Icon(Icons.person_add),
-            label: const Text('Add'),
-            style: OutlinedButton.styleFrom(
-              foregroundColor: Colors.green,
-              side: BorderSide(color: Colors.green),
+          // Only show Add button if it's not the current user
+          if (user['id'] != FirebaseAuth.instance.currentUser?.uid) ...[
+            OutlinedButton.icon(
+              onPressed: () {
+                Navigator.of(context).pop();
+                _addToContacts(user);
+              },
+              icon: const Icon(Icons.person_add, size: 16),
+              label: const Text('Add'),
+              style: OutlinedButton.styleFrom(
+                foregroundColor: Colors.green,
+                side: BorderSide(color: Colors.green),
+                padding: const EdgeInsets.symmetric(horizontal: 12),
+              ),
             ),
-          ),
-          // Chat Button
+          ],
           FilledButton.icon(
             onPressed: () {
               Navigator.of(context).pop();
               _startChat(user);
             },
-            icon: const Icon(Icons.chat),
+            icon: const Icon(Icons.chat, size: 16),
             label: const Text('Chat'),
             style: FilledButton.styleFrom(
               backgroundColor: color,
               foregroundColor: Colors.white,
+              padding: const EdgeInsets.symmetric(horizontal: 12),
             ),
           ),
         ],
+        actionsPadding: const EdgeInsets.fromLTRB(20, 0, 20, 16),
       ),
     );
   }
@@ -1783,14 +1781,16 @@ class _ProxinetMapPageState extends State<ProxinetMapPage> with TickerProviderSt
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
+        titlePadding: const EdgeInsets.fromLTRB(20, 20, 20, 8),
+        contentPadding: const EdgeInsets.fromLTRB(20, 8, 20, 16),
         title: Row(
           children: [
-            Icon(Icons.person_add, color: scheme.primary),
-            const SizedBox(width: 12),
+            Icon(Icons.person_add, color: scheme.primary, size: 20),
+            const SizedBox(width: 10),
             Text(
               'Add to Contacts',
               style: GoogleFonts.inter(
-                fontSize: 18,
+                fontSize: 16,
                 fontWeight: FontWeight.w600,
               ),
             ),
@@ -1804,13 +1804,14 @@ class _ProxinetMapPageState extends State<ProxinetMapPage> with TickerProviderSt
               'Send a contact request to ${user['name'] ?? 'this user'}?',
               style: TextStyle(
                 color: scheme.onSurface.withOpacity(0.7),
+                fontSize: 13,
               ),
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 8),
             Text(
-              'They will receive a notification and can choose to accept or decline your request.',
+              'They will receive a notification and can choose to accept or decline.',
               style: TextStyle(
-                fontSize: 12,
+                fontSize: 11,
                 color: scheme.onSurface.withOpacity(0.6),
               ),
             ),
@@ -1820,20 +1821,23 @@ class _ProxinetMapPageState extends State<ProxinetMapPage> with TickerProviderSt
           TextButton(
             onPressed: () => Navigator.of(context).pop(),
             child: const Text('Cancel'),
+            style: TextButton.styleFrom(padding: const EdgeInsets.symmetric(horizontal: 12)),
           ),
           FilledButton.icon(
             onPressed: () async {
               Navigator.of(context).pop();
               await _sendContactRequest(user);
             },
-            icon: const Icon(Icons.send),
+            icon: const Icon(Icons.send, size: 16),
             label: const Text('Send Request'),
             style: FilledButton.styleFrom(
               backgroundColor: scheme.primary,
               foregroundColor: Colors.white,
+              padding: const EdgeInsets.symmetric(horizontal: 12),
             ),
           ),
         ],
+        actionsPadding: const EdgeInsets.fromLTRB(20, 0, 20, 16),
       ),
     );
   }
@@ -1896,21 +1900,13 @@ class _ProxinetMapPageState extends State<ProxinetMapPage> with TickerProviderSt
   }
 
   void _startChat(Map<String, dynamic> user) {
-    // TODO: Implement chat functionality
-    // This could start a new conversation or navigate to existing chat
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('Starting chat with User ${user['id']}'),
-        backgroundColor: Theme.of(context).colorScheme.primary,
-        action: SnackBarAction(
-          label: 'Open Chat',
-          onPressed: () {
-            // Navigate to messages/chat
-            context.push('/proxinet/messages');
-          },
-        ),
-      ),
-    );
+    // Navigate to messages page with the selected user
+    // You can pass user data as query parameters or use a route with parameters
+    context.push('/proxinet/messages', extra: {
+      'userId': user['id'],
+      'userName': user['name'] ?? 'User',
+      'userType': user['type'] ?? 'unknown',
+    });
   }
 
   Widget _buildAvailabilityControls(ColorScheme scheme) {
@@ -1994,23 +1990,84 @@ class _ProxinetMapPageState extends State<ProxinetMapPage> with TickerProviderSt
           Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: Colors.green.withOpacity(0.1),
+              color: scheme.surfaceContainerHighest,
               borderRadius: BorderRadius.circular(8),
-              border: Border.all(color: Colors.green.withOpacity(0.3)),
+              border: Border.all(
+                color: scheme.outlineVariant.withOpacity(0.3),
+              ),
             ),
             child: Row(
               children: [
-                Icon(Icons.public, color: Colors.green, size: 16),
+                Icon(
+                  Icons.visibility,
+                  color: Colors.green,
+                  size: 16,
+                ),
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
-                    'Visible to everyone in this area',
-                    style: GoogleFonts.inter(
+                    'Visible to ${_formatAudience(_presenceSync.currentAudience?.name)}',
+                    style: TextStyle(
                       fontSize: 12,
-                      color: Colors.green,
-                      fontWeight: FontWeight.w500,
+                      color: scheme.onSurface.withOpacity(0.7),
                     ),
                   ),
+                ),
+              ],
+            ),
+          ),
+          
+          // Debug section
+          const SizedBox(height: 16),
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: scheme.errorContainer.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(
+                color: scheme.errorContainer.withOpacity(0.3),
+              ),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Debug Info',
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                    color: scheme.errorContainer,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Row(
+                  children: [
+                    Expanded(
+                      child: OutlinedButton.icon(
+                        onPressed: () => _debugAvailabilityStatus(),
+                        icon: const Icon(Icons.bug_report, size: 14),
+                        label: const Text('Check Status'),
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: scheme.errorContainer,
+                          side: BorderSide(color: scheme.errorContainer),
+                          padding: const EdgeInsets.symmetric(vertical: 8),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: OutlinedButton.icon(
+                        onPressed: () => _refreshAvailabilityLocation(),
+                        icon: const Icon(Icons.refresh, size: 14),
+                        label: const Text('Refresh Location'),
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: scheme.errorContainer,
+                          side: BorderSide(color: scheme.errorContainer),
+                          padding: const EdgeInsets.symmetric(vertical: 8),
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
               ],
             ),
@@ -2090,6 +2147,49 @@ class _ProxinetMapPageState extends State<ProxinetMapPage> with TickerProviderSt
           ),
         ],
       ],
+    );
+  }
+
+  void _debugAvailabilityStatus() async {
+    final status = await _presenceSync.getAvailabilityStatus();
+    final audience = await _presenceSync.getVisibilityAudience();
+    final currentAudience = await _presenceSync.getCurrentAudience();
+    final isEnabled = await _presenceSync.isAvailableForConnections;
+
+    final message = '''
+Availability Status:
+- Is Available: $isEnabled
+- Current Audience: ${currentAudience?.name ?? 'N/A'}
+- Visibility: ${status?['isAvailable'] ?? 'N/A'}
+- Expires At: ${status?['until'] ?? 'N/A'}
+- Latitude: ${status?['latitude'] ?? 'N/A'}
+- Longitude: ${status?['longitude'] ?? 'N/A'}
+- Radius: ${status?['radiusKm'] ?? 'N/A'}
+''';
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: Colors.blue,
+        duration: const Duration(seconds: 5),
+      ),
+    );
+  }
+
+  void _refreshAvailabilityLocation() async {
+    final position = await Geolocator.getCurrentPosition(
+      desiredAccuracy: LocationAccuracy.high,
+      timeLimit: const Duration(seconds: 10),
+    );
+    await _presenceSync.setAvailabilityLocation(
+      latitude: position.latitude,
+      longitude: position.longitude,
+    );
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Location updated for other users'),
+        backgroundColor: Colors.green,
+      ),
     );
   }
 }

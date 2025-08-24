@@ -23,12 +23,60 @@ class FirebasePostsRepo {
   }
 
   Stream<List<Map<String, dynamic>>> myPostsStream(String userId) {
+    print('Fetching posts for user: $userId');
     return _db
         .collection('posts')
         .where('authorId', isEqualTo: userId)
-        .orderBy('startAt', descending: true)
+        .orderBy('createdAt', descending: true) // Use createdAt instead of startAt for better ordering
         .snapshots()
-        .map((s) => s.docs.map((d) => {'id': d.id, ...d.data()}).toList());
+        .map((snapshot) {
+          print('Posts snapshot received: ${snapshot.docs.length} documents');
+          final posts = snapshot.docs.map((doc) {
+            final data = doc.data();
+            final post = {'id': doc.id, ...data};
+            print('Post data: ${post.toString()}');
+            return post;
+          }).toList();
+          print('Processed ${posts.length} posts for user $userId');
+          return posts;
+        })
+        .handleError((error) {
+          print('Error in myPostsStream: $error');
+          return <Map<String, dynamic>>[];
+        });
+  }
+
+  // Debug method to get all posts
+  Stream<List<Map<String, dynamic>>> allPostsStream() {
+    return _db
+        .collection('posts')
+        .orderBy('createdAt', descending: true)
+        .snapshots()
+        .map((snapshot) {
+          print('All posts snapshot: ${snapshot.docs.length} documents');
+          return snapshot.docs.map((doc) {
+            final data = doc.data();
+            return {'id': doc.id, ...data};
+          }).toList();
+        })
+        .handleError((error) {
+          print('Error in allPostsStream: $error');
+          return <Map<String, dynamic>>[];
+        });
+  }
+
+  // Method to get a single post by ID
+  Future<Map<String, dynamic>?> getPost(String postId) async {
+    try {
+      final doc = await _db.collection('posts').doc(postId).get();
+      if (doc.exists) {
+        return {'id': doc.id, ...doc.data()!};
+      }
+      return null;
+    } catch (e) {
+      print('Error getting post $postId: $e');
+      return null;
+    }
   }
 }
 

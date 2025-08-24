@@ -25,6 +25,9 @@ import 'package:proxinet/core/services/push_handler.dart';
 import 'package:proxinet/core/services/proxinet_presence_sync_service.dart';
 import 'package:proxinet/features/messaging/domain/services/chat_service.dart';
 import 'package:proxinet/features/messaging/data/repositories/chat_repository.dart';
+import 'package:proxinet/core/services/connection_service.dart';
+import 'package:proxinet/core/services/smart_tagging_service.dart';
+import 'package:proxinet/core/services/interest_matching_service.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -69,6 +72,13 @@ Future<void> _setupDependencies() async {
   // Messaging services
   sl.registerLazySingleton<ChatRepository>(() => ChatRepository());
   sl.registerLazySingleton<ChatService>(() => ChatService());
+
+  // Connection services
+  sl.registerLazySingleton<ConnectionService>(() => ConnectionService());
+
+  // Serendipity services
+  sl.registerLazySingleton<SmartTaggingService>(() => SmartTaggingService());
+  sl.registerLazySingleton<InterestMatchingService>(() => InterestMatchingService());
 }
 
 Future<void> _postInit() async {

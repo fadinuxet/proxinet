@@ -21,6 +21,8 @@ import '../features/proxinet/presentation/pages/simple_guide_page.dart';
 import '../features/proxinet/presentation/pages/ble_diagnostic_page.dart';
 import '../features/messaging/presentation/pages/messages_page.dart';
 import '../features/proxinet/presentation/pages/available_people_page.dart';
+import '../features/proxinet/presentation/pages/connections_page.dart';
+import '../features/proxinet/presentation/pages/content_discovery_page.dart';
 
 class ProxinetRouter {
   static final GlobalKey<NavigatorState> navKey = GlobalKey<NavigatorState>();
@@ -44,6 +46,8 @@ class ProxinetRouter {
   static const String bleDiagnostic = '/proxinet/ble-diagnostic';
   static const String messages = '/proxinet/messages';
   static const String availablePeople = '/proxinet/available-people';
+  static const String connections = '/proxinet/connections';
+  static const String contentDiscovery = '/proxinet/discover';
 
   static final GoRouter router = GoRouter(
     navigatorKey: navKey,
@@ -104,6 +108,14 @@ class ProxinetRouter {
       GoRoute(
         path: availablePeople,
         builder: (context, state) => const AvailablePeoplePage(),
+      ),
+      GoRoute(
+        path: connections,
+        builder: (context, state) => const ConnectionsPage(),
+      ),
+      GoRoute(
+        path: contentDiscovery,
+        builder: (context, state) => const ContentDiscoveryPage(),
       ),
       GoRoute(
         path: groups,

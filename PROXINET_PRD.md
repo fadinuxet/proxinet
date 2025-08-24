@@ -700,7 +700,8 @@ Empower professionals to discover and connect with relevant people in their vici
 - **Event Notifications**: Reminders for upcoming events and opportunities
 - **Network Updates**: Notifications for new connections and network changes
 
-#### **2. Enhanced Interest Matching**
+#### **2. Enhanced Interest M
+atching**
 - **Advanced Algorithms**: Improve matching accuracy with machine learning
 - **Interest Categories**: Expand interest taxonomy and classification
 - **Behavioral Learning**: Learn from user interactions and preferences

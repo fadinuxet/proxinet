@@ -26,9 +26,14 @@ class _ProxinetHomePageState extends State<ProxinetHomePage> {
   @override
   void initState() {
     super.initState();
-    _colorScheme = Theme.of(context).colorScheme;
     _notificationService = NotificationService();
     _initializeNotifications();
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _colorScheme = Theme.of(context).colorScheme;
   }
 
   void _initializeNotifications() {
@@ -321,6 +326,50 @@ class _ProxinetHomePageState extends State<ProxinetHomePage> {
               subtitle: 'View your content',
               color: Colors.orange,
               onTap: () => context.push('/proxinet/posts'),
+            )),
+          ],
+        ),
+        const SizedBox(height: 12),
+        Row(
+          children: [
+            Expanded(
+                child: _buildQuickActionCard(
+              icon: Icons.people,
+              title: 'My Network',
+              subtitle: 'Manage connections',
+              color: Colors.green,
+              onTap: () => context.push('/proxinet/connections'),
+            )),
+            const SizedBox(width: 12),
+            Expanded(
+                child: _buildQuickActionCard(
+              icon: Icons.message,
+              title: 'Messages',
+              subtitle: 'Chat with connections',
+              color: Colors.blue,
+              onTap: () => context.push('/proxinet/messages'),
+            )),
+          ],
+        ),
+        const SizedBox(height: 12),
+        Row(
+          children: [
+            Expanded(
+                child: _buildQuickActionCard(
+              icon: Icons.explore,
+              title: 'Discover',
+              subtitle: 'Find relevant content & people',
+              color: Colors.purple,
+              onTap: () => context.push('/proxinet/discover'),
+            )),
+            const SizedBox(width: 12),
+            Expanded(
+                child: _buildQuickActionCard(
+              icon: Icons.people,
+              title: 'My Network',
+              subtitle: 'Manage connections',
+              color: Colors.green,
+              onTap: () => context.push('/proxinet/connections'),
             )),
           ],
         ),

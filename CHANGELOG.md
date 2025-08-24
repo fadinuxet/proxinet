@@ -14,6 +14,33 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Analytics and insights
 - Third-party integrations
 
+## [0.3.2] - 2024-12-19
+
+### Fixed
+- **Posts Visibility Issue**: Fixed critical bug where saved posts were not visible in "My Posts" section
+- **Availability System Integration**: Resolved cross-device visibility issues with comprehensive debugging
+- **User Interface Issues**: Fixed multiple UI/UX problems reported by users
+- **Map Functionality**: Enhanced user interactions and prevented self-addition
+
+### Changed
+- **Posts Repository**: Fixed field ordering from `startAt` to `createdAt` for consistent post loading
+- **User Dialogs**: Made all popups more compact to reduce screen space usage
+- **Posts Page**: Added comprehensive debugging tools and toggle between user posts and all posts
+- **Map Interactions**: Improved user marker interactions with smart button visibility
+
+### Added
+- **Debug Tools**: Added comprehensive debugging for availability and posts systems
+- **Posts Toggle**: Users can now switch between "My Posts" and "All Posts" views
+- **Enhanced Logging**: Better error tracking and debugging information throughout the app
+- **Smart User Prevention**: Users can no longer add themselves to contacts
+- **Compact UI**: Reduced popup sizes and improved space efficiency
+
+### Technical Improvements
+- **Better Error Handling**: Enhanced error handling with fallbacks and user feedback
+- **Service Integration**: Improved integration between availability page and presence sync service
+- **Data Consistency**: Fixed data field mismatches between post creation and retrieval
+- **Performance**: Optimized post loading and availability updates
+
 ## [0.3.1] - 2024-12-19
 
 ### Fixed

@@ -43,3 +43,10 @@ app.*.map.json
 /android/app/debug
 /android/app/profile
 /android/app/release
+
+# Google Services (contains API keys) - NEVER commit these!
+android/app/google-services.json
+ios/Runner/GoogleService-Info.plist
+*.env
+.env.local
+.env.production

@@ -353,6 +353,104 @@ class ProxinetPresenceSyncService extends ChangeNotifier {
     }
   }
 
+  // Debug methods for troubleshooting
+  Future<Map<String, dynamic>?> getAvailabilityStatus() async {
+    try {
+      final user = FirebaseAuth.instance.currentUser;
+      if (user == null) return null;
+
+      final doc = await FirebaseFirestore.instance
+          .collection('availability')
+          .doc(user.uid)
+          .get();
+
+      if (doc.exists) {
+        return doc.data();
+      }
+      return null;
+    } catch (e) {
+      if (kDebugMode) {
+        print('Error getting availability status: $e');
+      }
+      return null;
+    }
+  }
+
+  VisibilityAudience? get currentAudience {
+    // This would need to be implemented based on your current logic
+    // For now, return null
+    return null;
+  }
+
+  Future<VisibilityAudience?> getVisibilityAudience() async {
+    try {
+      final user = FirebaseAuth.instance.currentUser;
+      if (user == null) return null;
+
+      final doc = await FirebaseFirestore.instance
+          .collection('availability')
+          .doc(user.uid)
+          .get();
+
+      if (doc.exists) {
+        final data = doc.data()!;
+        final audienceStr = data['audience'] as String?;
+        if (audienceStr != null) {
+          return VisibilityAudience.values.firstWhere(
+            (e) => e.name == audienceStr,
+            orElse: () => VisibilityAudience.firstDegree,
+          );
+        }
+      }
+      return null;
+    } catch (e) {
+      if (kDebugMode) {
+        print('Error getting visibility audience: $e');
+      }
+      return null;
+    }
+  }
+
+  Future<VisibilityAudience?> getCurrentAudience() async {
+    return getVisibilityAudience();
+  }
+
+  Future<void> setAvailabilityLocation({
+    required double latitude,
+    required double longitude,
+  }) async {
+    try {
+      final user = FirebaseAuth.instance.currentUser;
+      if (user == null) return;
+
+      // Update both availability and user profile
+      await FirebaseFirestore.instance
+          .collection('availability')
+          .doc(user.uid)
+          .update({
+        'latitude': latitude,
+        'longitude': longitude,
+        'locationUpdatedAt': FieldValue.serverTimestamp(),
+      });
+
+      await FirebaseFirestore.instance
+          .collection('users')
+          .doc(user.uid)
+          .update({
+        'latitude': latitude,
+        'longitude': longitude,
+        'lastLocationUpdate': FieldValue.serverTimestamp(),
+      });
+
+      notifyListeners();
+    } catch (e) {
+      if (kDebugMode) {
+        print('Error setting availability location: $e');
+      }
+      rethrow;
+    }
+  }
+
   // Contact Request Methods
   Future<bool> sendContactRequest(String targetUserId, {
     String? message,
