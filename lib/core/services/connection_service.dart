@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/foundation.dart';
 import 'package:uuid/uuid.dart';
 import '../models/connection.dart';
 import '../models/user_profile.dart';
@@ -88,7 +89,7 @@ class ConnectionService {
 
       return connectionId;
     } catch (e) {
-      print('Error sending connection request: $e');
+      
       rethrow;
     }
   }
@@ -130,7 +131,7 @@ class ConnectionService {
       _refreshConnections();
       _refreshRequests();
     } catch (e) {
-      print('Error accepting connection: $e');
+      
       rethrow;
     }
   }
@@ -171,7 +172,7 @@ class ConnectionService {
       _refreshConnections();
       _refreshRequests();
     } catch (e) {
-      print('Error rejecting connection: $e');
+      
       rethrow;
     }
   }
@@ -201,7 +202,7 @@ class ConnectionService {
       // Update streams
       _refreshConnections();
     } catch (e) {
-      print('Error blocking user: $e');
+      
       rethrow;
     }
   }
@@ -226,7 +227,7 @@ class ConnectionService {
       // Update streams
       _refreshConnections();
     } catch (e) {
-      print('Error removing connection: $e');
+      
       rethrow;
     }
   }
@@ -273,7 +274,7 @@ class ConnectionService {
 
       return uniqueConnections.values.toList();
     } catch (e) {
-      print('Error getting user connections: $e');
+      
       return [];
     }
   }
@@ -297,7 +298,7 @@ class ConnectionService {
           .map((doc) => ConnectionRequest.fromFirestore(doc))
           .toList();
     } catch (e) {
-      print('Error getting pending requests: $e');
+      
       return [];
     }
   }
@@ -348,7 +349,7 @@ class ConnectionService {
 
       return suggestions.where((profile) => !existingUserIds.contains(profile.id)).toList();
     } catch (e) {
-      print('Error getting connection suggestions: $e');
+      
       return [];
     }
   }
@@ -365,7 +366,7 @@ class ConnectionService {
 
       return snapshot.docs.isNotEmpty;
     } catch (e) {
-      print('Error checking connection status: $e');
+      
       return false;
     }
   }
@@ -384,7 +385,7 @@ class ConnectionService {
 
       return Connection.fromFirestore(snapshot.docs.first);
     } catch (e) {
-      print('Error getting connection: $e');
+      
       return null;
     }
   }
@@ -403,7 +404,8 @@ class ConnectionService {
 
       _refreshConnections();
     } catch (e) {
-      print('Error updating connection interaction: $e');
+      // Log error but don't throw - this is a background operation
+      debugPrint('Error updating connection: $e');
     }
   }
 
@@ -429,7 +431,8 @@ class ConnectionService {
 
       _refreshConnections();
     } catch (e) {
-      print('Error toggling connection favorite: $e');
+      // Log error but don't throw - this is a background operation
+      debugPrint('Error toggling connection favorite: $e');
     }
   }
 

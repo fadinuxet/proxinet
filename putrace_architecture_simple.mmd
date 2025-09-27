@@ -1,0 +1,60 @@
+graph TB
+    subgraph "Client Layer"
+        A[Flutter Mobile App<br/>iOS/Android/Web/macOS]
+    end
+    
+    subgraph "Presentation Layer"
+        B[GoRouter Navigation]
+        C[5 Main Sections<br/>Discover Messages Map Profile Settings]
+        D[Clean Architecture UI<br/>Material 3 Design]
+    end
+    
+    subgraph "Core Services Layer"
+        E[Professional Auth Service<br/>Privacy-First Authentication]
+        F[BLE Service<br/>Proximity Discovery]
+        G[Presence Service<br/>Location-Based Availability]
+        H[Crypto Service<br/>End-to-End Encryption]
+        I[Secure Messaging<br/>Encrypted Communication]
+        J[Conference Mode<br/>Offline BLE Networking]
+    end
+    
+    subgraph "Data Layer"
+        K[Firebase Auth<br/>Google/Apple OAuth]
+        L[Cloud Firestore<br/>Real-time Database]
+        M[Firebase Storage<br/>File Management]
+        N[Firebase Messaging<br/>Push Notifications]
+        O[Local Secure Storage<br/>Encrypted Device Storage]
+    end
+    
+    subgraph "External Services"
+        P[Google Maps API<br/>Location Services]
+        Q[BLE Hardware<br/>Bluetooth Low Energy]
+        R[GPS/Location<br/>Device Positioning]
+    end
+    
+    A --> B
+    B --> C
+    C --> D
+    D --> E
+    D --> F
+    D --> G
+    D --> H
+    D --> I
+    D --> J
+    
+    E --> K
+    F --> Q
+    G --> R
+    H --> O
+    I --> L
+    J --> Q
+    
+    E --> L
+    F --> L
+    G --> L
+    I --> L
+    J --> O
+    
+    G --> P
+    L --> M
+    L --> N

@@ -8,7 +8,9 @@ import 'package:firebase_auth/firebase_auth.dart';
 import '../../domain/models/chat_message.dart';
 
 class MessagesPage extends StatefulWidget {
-  const MessagesPage({super.key});
+  final Map<String, dynamic>? extra;
+  
+  const MessagesPage({super.key, this.extra});
 
   @override
   State<MessagesPage> createState() => _MessagesPageState();
@@ -16,10 +18,71 @@ class MessagesPage extends StatefulWidget {
 
 class _MessagesPageState extends State<MessagesPage> {
   final ChatService _chatService = ChatService();
+  String? _conversationId;
+  String? _targetUserId;
+  String? _targetUserName;
+  bool _shouldOpenChat = false;
 
   @override
   void initState() {
     super.initState();
+    _processExtraData();
+  }
+
+  void _processExtraData() {
+    if (widget.extra != null) {
+      _conversationId = widget.extra!['conversationId'] as String?;
+      _targetUserId = widget.extra!['userId'] as String?;
+      _targetUserName = widget.extra!['userName'] as String?;
+      _shouldOpenChat = widget.extra!['openChat'] == true;
+      
+      
+      
+      // If we should open a specific chat, do it after the widget is built
+      if (_shouldOpenChat && _conversationId != null) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          _openSpecificChat();
+        });
+      }
+    }
+  }
+
+  void _openSpecificChat() async {
+    try {
+      // Create or get the conversation
+      final conversation = await _chatService.getOrCreateConversation(
+        _conversationId!,
+        _targetUserId!,
+        _targetUserName ?? 'User',
+      );
+      
+      if (mounted && conversation != null) {
+        // Navigate to the specific conversation
+        // For now, show a success message and highlight the conversation
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Chat opened with ${_targetUserName ?? 'User'}'),
+            backgroundColor: Colors.green,
+            action: SnackBarAction(
+              label: 'View Chat',
+              onPressed: () {
+                // TODO: Navigate to specific conversation view
+                // This would require implementing a conversation detail page
+              },
+            ),
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error opening chat: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
   }
 
   @override
@@ -53,6 +116,42 @@ class _MessagesPageState extends State<MessagesPage> {
             ),
           ),
 
+          // Show chat opening indicator if applicable
+          if (_shouldOpenChat && _targetUserName != null) ...[
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(12),
+              margin: const EdgeInsets.symmetric(horizontal: 16),
+              decoration: BoxDecoration(
+                color: scheme.primaryContainer,
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(
+                  color: scheme.primary.withValues(alpha: 0.3),
+                ),
+              ),
+              child: Row(
+                children: [
+                  Icon(
+                    Icons.chat_bubble,
+                    color: scheme.primary,
+                    size: 20,
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      'Opening chat with $_targetUserName',
+                      style: TextStyle(
+                        color: scheme.onPrimaryContainer,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 16),
+          ],
+
           // Conversations list
           Expanded(
             child: FutureBuilder<List<Conversation>>(
@@ -72,7 +171,7 @@ class _MessagesPageState extends State<MessagesPage> {
                 }
 
                 if (snapshot.hasError) {
-                  print('MessagesPage error: ${snapshot.error}');
+                  
                   return Center(
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
@@ -131,13 +230,13 @@ class _MessagesPageState extends State<MessagesPage> {
                                 begin: Alignment.topLeft,
                                 end: Alignment.bottomRight,
                                 colors: [
-                                  scheme.primary.withOpacity(0.1),
-                                  scheme.secondary.withOpacity(0.05),
+                                  scheme.primary.withValues(alpha: 0.1),
+                                  scheme.secondary.withValues(alpha: 0.05),
                                 ],
                               ),
                               borderRadius: BorderRadius.circular(32),
                               border: Border.all(
-                                color: scheme.primary.withOpacity(0.2),
+                                color: scheme.primary.withValues(alpha: 0.2),
                                 width: 1,
                               ),
                             ),
@@ -179,7 +278,7 @@ class _MessagesPageState extends State<MessagesPage> {
                             children: [
                               Expanded(
                                 child: FilledButton.icon(
-                                  onPressed: () => context.push('/proxinet/nearby'),
+                                  onPressed: () => context.push('/putrace/nearby'),
                                   icon: const Icon(Icons.explore),
                                   label: const Text('Discover People'),
                                   style: FilledButton.styleFrom(
@@ -190,7 +289,7 @@ class _MessagesPageState extends State<MessagesPage> {
                               const SizedBox(width: 16),
                               Expanded(
                                 child: OutlinedButton.icon(
-                                  onPressed: () => context.push('/proxinet/contacts'),
+                                  onPressed: () => context.push('/putrace/contacts'),
                                   icon: const Icon(Icons.people),
                                   label: const Text('View Contacts'),
                                   style: OutlinedButton.styleFrom(
@@ -237,8 +336,8 @@ class _MessagesPageState extends State<MessagesPage> {
                               label: const Text('Create Test Conversations'),
                               style: OutlinedButton.styleFrom(
                                 padding: const EdgeInsets.symmetric(vertical: 12),
-                                backgroundColor: Colors.orange.withOpacity(0.1),
-                                side: BorderSide(color: Colors.orange.withOpacity(0.5)),
+                                backgroundColor: Colors.orange.withValues(alpha: 0.1),
+                                side: BorderSide(color: Colors.orange.withValues(alpha: 0.5)),
                               ),
                             ),
                           ),
@@ -249,7 +348,7 @@ class _MessagesPageState extends State<MessagesPage> {
                           Container(
                             padding: const EdgeInsets.all(16),
                             decoration: BoxDecoration(
-                              color: scheme.surfaceContainerHighest.withOpacity(0.3),
+                              color: scheme.surfaceContainerHighest.withValues(alpha: 0.3),
                               borderRadius: BorderRadius.circular(12),
                             ),
                             child: Row(
@@ -351,7 +450,7 @@ class _BasicChatPageState extends State<_BasicChatPage> {
         }
       });
     } catch (e) {
-      print('Error loading messages: $e');
+      
       setState(() => _isLoading = false);
       
       if (mounted) {
@@ -381,7 +480,7 @@ class _BasicChatPageState extends State<_BasicChatPage> {
       // Reload messages to show the new one
       _loadMessages();
     } catch (e) {
-      print('Error sending message: $e');
+      
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -403,7 +502,7 @@ class _BasicChatPageState extends State<_BasicChatPage> {
           children: [
             CircleAvatar(
               radius: 16,
-              backgroundColor: scheme.primary.withOpacity(0.1),
+              backgroundColor: scheme.primary.withValues(alpha: 0.1),
               child: Text(
                 widget.conversation.otherParticipantId.isNotEmpty 
                     ? widget.conversation.otherParticipantId[0].toUpperCase() 
@@ -447,7 +546,7 @@ class _BasicChatPageState extends State<_BasicChatPage> {
             if (Navigator.of(context).canPop()) {
               Navigator.of(context).pop();
             } else {
-              context.go('/proxinet');
+              context.go('/putrace');
             }
           },
         ),
@@ -508,7 +607,7 @@ class _BasicChatPageState extends State<_BasicChatPage> {
               color: scheme.surface,
               border: Border(
                 top: BorderSide(
-                  color: scheme.outline.withOpacity(0.2),
+                  color: scheme.outline.withValues(alpha: 0.2),
                   width: 1,
                 ),
               ),
@@ -525,7 +624,7 @@ class _BasicChatPageState extends State<_BasicChatPage> {
                         borderSide: BorderSide.none,
                       ),
                       filled: true,
-                      fillColor: scheme.surfaceContainerHighest.withOpacity(0.3),
+                      fillColor: scheme.surfaceContainerHighest.withValues(alpha: 0.3),
                       contentPadding: const EdgeInsets.symmetric(
                         horizontal: 16,
                         vertical: 12,
@@ -567,7 +666,7 @@ class _BasicChatPageState extends State<_BasicChatPage> {
         margin: const EdgeInsets.only(bottom: 8),
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         decoration: BoxDecoration(
-          color: isMe ? scheme.primary : scheme.surfaceContainerHighest.withOpacity(0.3),
+          color: isMe ? scheme.primary : scheme.surfaceContainerHighest.withValues(alpha: 0.3),
           borderRadius: BorderRadius.circular(20),
         ),
         constraints: BoxConstraints(
@@ -589,7 +688,7 @@ class _BasicChatPageState extends State<_BasicChatPage> {
               style: GoogleFonts.inter(
                 fontSize: 10,
                 color: isMe 
-                    ? scheme.onPrimary.withOpacity(0.7)
+                    ? scheme.onPrimary.withValues(alpha: 0.7)
                     : scheme.onSurfaceVariant,
               ),
             ),

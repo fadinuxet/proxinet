@@ -4,61 +4,82 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:get_it/get_it.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
-import 'package:firebase_auth/firebase_auth.dart';
-import 'package:go_router/go_router.dart';
-import 'package:proxinet/proxinet/proxinet_router.dart';
+import 'package:putrace/putrace/putrace_router.dart';
 import 'package:firebase_core/firebase_core.dart';
-import 'package:proxinet/core/services/proxinet_secure_store.dart';
-import 'package:proxinet/core/services/proxinet_crypto_service.dart';
-import 'package:proxinet/core/services/proxinet_oauth_service.dart';
-import 'package:proxinet/core/services/proxinet_contacts_service.dart';
-import 'package:proxinet/core/services/proxinet_calendar_service.dart';
-import 'package:proxinet/core/services/proxinet_presence_service.dart';
-import 'package:proxinet/core/services/proxinet_local_store.dart';
-import 'package:proxinet/core/services/proxinet_settings_service.dart';
-import 'package:proxinet/core/services/proxinet_ble_service.dart';
-import 'package:proxinet/core/services/proxinet_match_api.dart';
-import 'package:proxinet/core/services/serendipity_service.dart';
-import 'package:proxinet/core/services/notification_service.dart';
-import 'package:proxinet/core/services/firebase_repositories.dart';
-import 'package:proxinet/core/services/push_handler.dart';
-import 'package:proxinet/core/services/proxinet_presence_sync_service.dart';
-import 'package:proxinet/features/messaging/domain/services/chat_service.dart';
-import 'package:proxinet/features/messaging/data/repositories/chat_repository.dart';
-import 'package:proxinet/core/services/connection_service.dart';
-import 'package:proxinet/core/services/smart_tagging_service.dart';
-import 'package:proxinet/core/services/interest_matching_service.dart';
+import 'package:putrace/core/services/putrace_secure_store.dart';
+import 'package:putrace/core/services/putrace_crypto_service.dart';
+import 'package:putrace/core/services/putrace_oauth_service.dart';
+import 'package:putrace/core/services/putrace_contacts_service.dart';
+import 'package:putrace/core/services/putrace_calendar_service.dart';
+import 'package:putrace/core/services/putrace_presence_service.dart';
+import 'package:putrace/core/services/putrace_local_store.dart';
+import 'package:putrace/core/services/putrace_settings_service.dart';
+import 'package:putrace/core/services/putrace_ble_service.dart';
+import 'package:putrace/core/services/putrace_match_api.dart';
+import 'package:putrace/core/services/serendipity_service.dart';
+import 'package:putrace/core/services/notification_service.dart';
+import 'package:putrace/core/services/firebase_repositories.dart';
+import 'package:putrace/core/services/push_handler.dart';
+import 'package:putrace/core/services/putrace_presence_sync_service.dart';
+import 'package:putrace/features/messaging/domain/services/chat_service.dart';
+import 'package:putrace/features/messaging/data/repositories/chat_repository.dart';
+import 'package:putrace/core/services/connection_service.dart';
+import 'package:putrace/core/services/smart_tagging_service.dart';
+import 'package:putrace/core/services/simple_firebase_monitor.dart';
+import 'package:putrace/features/putrace/data/services/venue_persistence_service.dart';
+import 'package:putrace/core/services/interest_matching_service.dart';
+import 'package:putrace/core/services/professional_auth_service.dart';
+import 'package:putrace/core/services/secure_messaging_service.dart';
+import 'package:putrace/core/services/ble_conference_mode_service.dart';
+import 'core/services/user_tier_service.dart';
+import 'core/services/anonymous_user_service.dart';
+import 'core/services/anonymous_ble_service.dart';
+import 'core/services/anonymous_privacy_service.dart';
+import 'core/services/panic_mode_service.dart';
+import 'core/services/dual_transport_service.dart';
+import 'core/services/ble_state_service.dart';
+import 'core/services/connection_request_service.dart';
+import 'core/services/user_blocking_service.dart';
+import 'core/services/professional_serendipity_engine.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp();
   await _setupDependencies();
   await _postInit();
-  runApp(const ProxinetApp());
+  
+  // Initialize Firebase monitoring
+  await SimpleFirebaseMonitor.initialize();
+  
+  // Initialize new services
+  await GetIt.instance<UserBlockingService>().initialize();
+  await GetIt.instance<ProfessionalSerendipityEngine>();
+  
+  runApp(const PutraceApp());
 }
 
 Future<void> _setupDependencies() async {
   final sl = GetIt.instance;
 
-  sl.registerLazySingleton<ProxinetSecureStore>(() => ProxinetSecureStore());
-  sl.registerLazySingleton<ProxinetCryptoService>(
-      () => ProxinetCryptoService(sl<ProxinetSecureStore>()));
-  sl.registerLazySingleton<ProxinetOauthService>(() => ProxinetOauthService());
-  sl.registerLazySingleton<ProxinetLocalStore>(() => ProxinetLocalStore());
-  sl.registerLazySingleton<ProxinetContactsService>(() =>
-      ProxinetContactsService(
-          sl<ProxinetOauthService>(), sl<ProxinetCryptoService>()));
-  sl.registerLazySingleton<ProxinetCalendarService>(
-      () => ProxinetCalendarService(sl<ProxinetOauthService>()));
-  sl.registerLazySingleton<ProxinetPresenceService>(
-      () => ProxinetPresenceService());
-  sl.registerLazySingleton<ProxinetSettingsService>(
-      () => ProxinetSettingsService());
-  sl.registerLazySingleton<ProxinetPresenceSyncService>(
-      () => ProxinetPresenceSyncService());
-  sl.registerLazySingleton<ProxinetBleService>(() => ProxinetBleService());
-  sl.registerLazySingleton<ProxinetMatchApi>(
-      () => ProxinetMatchApiStub(sl<ProxinetLocalStore>()));
+  sl.registerLazySingleton<PutraceSecureStore>(() => PutraceSecureStore());
+  sl.registerLazySingleton<PutraceCryptoService>(
+      () => PutraceCryptoService(sl<PutraceSecureStore>()));
+  sl.registerLazySingleton<PutraceOauthService>(() => PutraceOauthService());
+  sl.registerLazySingleton<PutraceLocalStore>(() => PutraceLocalStore());
+  sl.registerLazySingleton<PutraceContactsService>(() =>
+      PutraceContactsService(
+          sl<PutraceOauthService>(), sl<PutraceCryptoService>()));
+  sl.registerLazySingleton<PutraceCalendarService>(
+      () => PutraceCalendarService(sl<PutraceOauthService>()));
+  sl.registerLazySingleton<PutracePresenceService>(
+      () => PutracePresenceService());
+  sl.registerLazySingleton<PutraceSettingsService>(
+      () => PutraceSettingsService());
+  sl.registerLazySingleton<PutracePresenceSyncService>(
+      () => PutracePresenceSyncService());
+  sl.registerLazySingleton<PutraceBleService>(() => PutraceBleService());
+  sl.registerLazySingleton<PutraceMatchApi>(
+      () => PutraceMatchApiStub(sl<PutraceLocalStore>()));
   sl.registerLazySingleton<SerendipityService>(() => SerendipityService());
   sl.registerLazySingleton<NotificationService>(() => NotificationService());
   sl.registerLazySingleton<FirebasePostsRepo>(() => FirebasePostsRepo());
@@ -79,6 +100,39 @@ Future<void> _setupDependencies() async {
   // Serendipity services
   sl.registerLazySingleton<SmartTaggingService>(() => SmartTaggingService());
   sl.registerLazySingleton<InterestMatchingService>(() => InterestMatchingService());
+  
+  // Privacy-First Services (Enterprise-Grade Security)
+  sl.registerLazySingleton<ProfessionalAuthService>(() => 
+      ProfessionalAuthService(sl<PutraceCryptoService>(), sl<PutraceSecureStore>()));
+  sl.registerLazySingleton<SecureMessagingService>(() => 
+      SecureMessagingService(sl<PutraceCryptoService>(), sl<ProfessionalAuthService>()));
+  sl.registerLazySingleton<BLEConferenceModeService>(() => 
+      BLEConferenceModeService(sl<PutraceCryptoService>(), sl<ProfessionalAuthService>()));
+  
+  // Venue Persistence Service
+  sl.registerLazySingleton<VenuePersistenceService>(() => VenuePersistenceService());
+  
+  // User Tier Service
+  sl.registerLazySingleton<UserTierService>(() => UserTierService());
+  
+  // Anonymous User Services
+  sl.registerLazySingleton<AnonymousUserService>(() => AnonymousUserService());
+  sl.registerLazySingleton<AnonymousBLEService>(() => AnonymousBLEService());
+  sl.registerLazySingleton<AnonymousPrivacyService>(() => AnonymousPrivacyService());
+  
+  // Bitchat-Inspired Services
+  sl.registerLazySingleton<PanicModeService>(() => PanicModeService());
+  sl.registerLazySingleton<DualTransportService>(() => DualTransportService());
+  
+  // BLE State Management
+  sl.registerLazySingleton<BLEStateService>(() => BLEStateService());
+  
+  // Connection Request Management
+  sl.registerLazySingleton<ConnectionRequestService>(() => ConnectionRequestService());
+  
+  // Professional Serendipity & Blocking Services
+  sl.registerLazySingleton<UserBlockingService>(() => UserBlockingService());
+  sl.registerLazySingleton<ProfessionalSerendipityEngine>(() => ProfessionalSerendipityEngine());
 }
 
 Future<void> _postInit() async {
@@ -88,7 +142,7 @@ Future<void> _postInit() async {
   // Request notification permission (Android 13+/iOS)
   await FirebaseMessaging.instance.requestPermission();
   // Authentication will be handled by AuthWrapper
-  print('Firebase initialized successfully');
+  
   // Background handler
   FirebaseMessaging.onBackgroundMessage(firebaseMessagingBackgroundHandler);
   await setupPushHandlers();
@@ -100,8 +154,8 @@ Future<void> _postInit() async {
   }
 }
 
-class ProxinetApp extends StatelessWidget {
-  const ProxinetApp({super.key});
+class PutraceApp extends StatelessWidget {
+  const PutraceApp({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -113,7 +167,7 @@ class ProxinetApp extends StatelessWidget {
         ColorScheme.fromSeed(seedColor: seed, brightness: Brightness.dark);
 
     return MaterialApp.router(
-      title: 'ProxiNet',
+      title: 'Putrace',
       debugShowCheckedModeBanner: false,
       themeMode: ThemeMode.system,
       builder: (context, child) {
@@ -131,21 +185,21 @@ class ProxinetApp extends StatelessWidget {
               systemNavigationBarColor: Colors.transparent,
               systemNavigationBarIconBrightness: Brightness.dark,
             ),
-            child: WillPopScope(
-              onWillPop: () async {
+            child: PopScope(
+              canPop: false,
+              onPopInvokedWithResult: (didPop, result) async {
+                if (didPop) return;
                 try {
                   // Check if we can pop (go back) in the current route
                   if (Navigator.of(context).canPop()) {
-                    print('Back button: can pop, going back');
                     Navigator.of(context).pop();
-                    return false; // Don't close the app
+                    return; // Don't close the app
                   } else {
                     // If we can't pop (we're at the root), show exit dialog
-                    print('Back button: at root, showing exit dialog');
-                    return await showDialog<bool>(
+                    final shouldExit = await showDialog<bool>(
                           context: context,
                           builder: (context) => AlertDialog(
-                            title: const Text('Exit ProxiNet'),
+                            title: const Text('Exit Putrace'),
                             content: const Text(
                                 'Are you sure you want to exit the app?'),
                             actions: [
@@ -163,10 +217,15 @@ class ProxinetApp extends StatelessWidget {
                           ),
                         ) ??
                         false;
+                    
+                    if (shouldExit) {
+                      // Exit the app
+                      SystemNavigator.pop();
+                    }
                   }
                 } catch (e) {
-                  print('Error in WillPopScope: $e');
-                  return false; // Don't close the app on error
+                  // Don't close the app on error
+                  return;
                 }
               },
               child: child!,
@@ -281,7 +340,7 @@ class ProxinetApp extends StatelessWidget {
         ),
         cardTheme: const CardThemeData(elevation: 0),
       ),
-      routerConfig: ProxinetRouter.router,
+      routerConfig: PutraceRouter.router,
     );
   }
 }

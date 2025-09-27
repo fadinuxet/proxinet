@@ -92,7 +92,7 @@ class _SignupPageState extends State<SignupPage> {
               children: [
                 Icon(Icons.check_circle, color: Colors.green, size: 28),
                 const SizedBox(width: 12),
-                Text('Welcome to Proxinet!'),
+                Text('Welcome to Putrace!'),
               ],
             ),
             content: const Text(
@@ -102,7 +102,7 @@ class _SignupPageState extends State<SignupPage> {
               FilledButton(
                 onPressed: () {
                   Navigator.of(context).pop();
-                  context.go('/proxinet');
+                  context.go('/putrace');
                 },
                 child: const Text('Get Started'),
               ),
@@ -161,9 +161,9 @@ class _SignupPageState extends State<SignupPage> {
         decoration: BoxDecoration(
           gradient: LinearGradient(
             colors: [
-              scheme.primary.withOpacity(0.1),
-              scheme.secondary.withOpacity(0.1),
-              scheme.tertiary.withOpacity(0.1),
+              scheme.primary.withValues(alpha: 0.1),
+              scheme.secondary.withValues(alpha: 0.1),
+              scheme.tertiary.withValues(alpha: 0.1),
             ],
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
@@ -190,7 +190,7 @@ class _SignupPageState extends State<SignupPage> {
                             shape: BoxShape.circle,
                             boxShadow: [
                               BoxShadow(
-                                color: scheme.primary.withOpacity(0.3),
+                                color: scheme.primary.withValues(alpha: 0.3),
                                 blurRadius: 20,
                                 offset: const Offset(0, 8),
                               ),
@@ -204,7 +204,7 @@ class _SignupPageState extends State<SignupPage> {
                         ),
                         const SizedBox(height: 24),
                         Text(
-                          'Join Proxinet',
+                          'Join Putrace',
                           style: GoogleFonts.inter(
                             fontSize: 32,
                             fontWeight: FontWeight.bold,

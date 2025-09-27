@@ -1,4 +1,4 @@
-# ProxiNet v0.3.0 - Serendipity Engine Release
+# Putrace v0.3.0 - Serendipity Engine Release
 
 **Release Date:** December 19, 2024  
 **Version:** 0.3.0+3  
@@ -9,7 +9,7 @@
 ## 🎯 What's New
 
 ### **Serendipity Engine Foundation**
-ProxiNet now goes beyond simple proximity discovery to become a **Social Serendipity Network** that helps you find meaningful connections based on shared interests, goals, and opportunities.
+Putrace now goes beyond simple proximity discovery to become a **Social Serendipity Network** that helps you find meaningful connections based on shared interests, goals, and opportunities.
 
 ### **Enhanced User Profiles**
 - **Industry Selection**: Specify your professional field (Tech, Healthcare, Finance, etc.)
@@ -203,7 +203,7 @@ ProxiNet now goes beyond simple proximity discovery to become a **Social Serendi
 1. Download the APK file
 2. Enable "Install from unknown sources" in Android settings
 3. Install the APK
-4. Open ProxiNet and sign in
+4. Open Putrace and sign in
 
 ### **For Developers**
 1. Clone the repository
@@ -223,7 +223,7 @@ ProxiNet now goes beyond simple proximity discovery to become a **Social Serendi
 
 ### **Feedback**
 - We value your feedback and suggestions
-- Help us improve ProxiNet
+- Help us improve Putrace
 - Share your networking success stories
 - Suggest new features and improvements
 
@@ -241,5 +241,5 @@ Thank you to all our users and contributors who helped make this release possibl
 
 ---
 
-**ProxiNet Team**  
+**Putrace Team**  
 *Building meaningful connections through intelligent proximity networking*

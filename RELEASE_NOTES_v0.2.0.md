@@ -1,4 +1,4 @@
-# ProxiNet v0.2.0 Release Notes
+# Putrace v0.2.0 Release Notes
 
 **Release Date:** December 19, 2024  
 **Version:** 0.2.0  
@@ -23,7 +23,7 @@ This release introduces a completely redesigned map experience with clear separa
 - **Consistent Controls**: Radius controls and legends appear only when relevant
 
 ### 🏗️ **Technical Improvements**
-- **ProxinetPresenceSyncService**: New dedicated service for better presence management
+- **PutracePresenceSyncService**: New dedicated service for better presence management
 - **Tab Controller Integration**: Proper lifecycle management for tab-based navigation
 - **Service Architecture**: Better separation of concerns with dedicated services
 - **Performance Optimization**: Each tab loads only the data it needs
@@ -38,7 +38,7 @@ This release introduces a completely redesigned map experience with clear separa
 
 ### Architecture Changes
 - **Tab-Based Navigation**: Implemented using Flutter's TabController with proper lifecycle management
-- **Service Integration**: Enhanced integration with ProxinetPresenceSyncService
+- **Service Integration**: Enhanced integration with PutracePresenceSyncService
 - **Code Organization**: Improved separation of map functionality into focused components
 - **State Management**: Better state handling for tab-specific data and controls
 
@@ -81,7 +81,7 @@ This release introduces a completely redesigned map experience with clear separa
 ## 🚀 Getting Started with New Features
 
 ### Using the Tabbed Interface
-1. **Navigate to the Map Page** from the main ProxiNet interface
+1. **Navigate to the Map Page** from the main Putrace interface
 2. **Switch between tabs** using the tab bar at the top
 3. **Around Me**: Enable nearby discovery and adjust radius
 4. **Available**: View and connect with available users
@@ -135,7 +135,7 @@ This release is licensed under the MIT License.
 
 ---
 
-**ProxiNet Team**  
+**Putrace Team**  
 *Building the future of privacy-first networking*
 
 ---

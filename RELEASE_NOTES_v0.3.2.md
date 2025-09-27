@@ -1,4 +1,4 @@
-# ProxiNet Release Notes v0.3.2
+# Putrace Release Notes v0.3.2
 
 **Release Date:** December 19, 2024  
 **Version:** 0.3.2+5  
@@ -90,19 +90,19 @@ This release addresses critical user-reported issues and significantly improves 
 ## 🧪 Testing the Fixes
 
 ### **Posts System:**
-1. Go to Posts page (`/proxinet/serendipity`)
+1. Go to Posts page (`/putrace/serendipity`)
 2. Check debug section shows your user ID
 3. Toggle between "My Posts" and "All Posts"
 4. Create a test post and verify it appears
 
 ### **Availability System:**
-1. Go to Availability page (`/proxinet/availability`)
+1. Go to Availability page (`/putrace/availability`)
 2. Set yourself as available
 3. Use debug buttons to check status
 4. Verify you appear on other devices' maps
 
 ### **Map Functionality:**
-1. Go to Map page (`/proxinet/map`)
+1. Go to Map page (`/putrace/map`)
 2. Test all three tabs (Around Me, Available, Combined)
 3. Click on user markers to test interactions
 4. Verify compact dialogs and smart button visibility
@@ -126,5 +126,5 @@ Future releases will include:
 
 ---
 
-**ProxiNet Team**  
+**Putrace Team**  
 *Building meaningful connections through proximity*

@@ -5,7 +5,7 @@
 	<key>CFBundleDevelopmentRegion</key>
 	<string>$(DEVELOPMENT_LANGUAGE)</string>
 	<key>CFBundleDisplayName</key>
-	<string>Proxinet</string>
+	<string>Putrace</string>
 	<key>CFBundleExecutable</key>
 	<string>$(EXECUTABLE_NAME)</string>
 	<key>CFBundleIdentifier</key>
@@ -13,7 +13,7 @@
 	<key>CFBundleInfoDictionaryVersion</key>
 	<string>6.0</string>
 	<key>CFBundleName</key>
-	<string>proxinet</string>
+	<string>putrace</string>
 	<key>CFBundlePackageType</key>
 	<string>APPL</string>
 	<key>CFBundleShortVersionString</key>
@@ -46,11 +46,13 @@
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
 	<key>NSLocationWhenInUseUsageDescription</key>
-	<string>We use your location at city-level to power privacy-first proximity alerts.</string>
+	<string>Putrace needs location access to discover nearby professionals and venues for networking opportunities</string>
+	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
+	<string>Putrace needs location access for background networking discovery and venue-based professional connections</string>
 	<key>NSBluetoothAlwaysUsageDescription</key>
-	<string>Bluetooth is used for optional event mode discovery.</string>
+	<string>Putrace uses Bluetooth to discover nearby professionals in offline mode for secure professional networking</string>
 	<key>NSBluetoothPeripheralUsageDescription</key>
-	<string>Bluetooth is used for optional event mode discovery.</string>
+	<string>Putrace uses Bluetooth for secure professional networking and offline conference mode</string>
 	<key>NSPhotoLibraryUsageDescription</key>
 	<string>We need access to your photo library to set your profile avatar.</string>
 	<key>NSCameraUsageDescription</key>

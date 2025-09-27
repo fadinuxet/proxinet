@@ -47,7 +47,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Availability System Integration**: Fixed critical integration issue between availability page and presence sync service
 - **Location Updates**: Availability now automatically updates user location in both Firestore collections
 - **Map Discovery**: Users setting availability are now properly discoverable on the map
-- **Service Integration**: Availability page now uses ProxinetPresenceSyncService instead of direct Firestore operations
+- **Service Integration**: Availability page now uses PutracePresenceSyncService instead of direct Firestore operations
 - **User Experience**: Added location status indicators and manual refresh options
 
 ### Changed
@@ -89,7 +89,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Tabbed Map Interface** - Separated "Around Me" (BLE discovery) and "Available to Connect" (availability status) into distinct tabs
 - **Enhanced Map Experience** - Three dedicated tabs: Around Me, Available, and Combined view
 - **Improved User Experience** - Clear separation of proximity discovery and availability features
-- **ProxinetPresenceSyncService** - New service for better presence management and synchronization
+- **PutracePresenceSyncService** - New service for better presence management and synchronization
 - **BLE Diagnostic Page** - New diagnostic interface for Bluetooth troubleshooting
 - **Available People Page** - Dedicated page for viewing available users
 
@@ -101,7 +101,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Technical Improvements
 - **Tab Controller Integration** - Proper lifecycle management for tab-based navigation
-- **Service Integration** - Better integration with ProxinetPresenceSyncService
+- **Service Integration** - Better integration with PutracePresenceSyncService
 - **Code Organization** - Improved separation of map functionality into focused components
 - **Performance Optimization** - Each tab loads only relevant data
 

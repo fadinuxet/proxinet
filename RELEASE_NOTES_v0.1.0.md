@@ -1,4 +1,4 @@
-# ProxiNet v0.1.0 Release Notes
+# Putrace v0.1.0 Release Notes
 
 **Release Date:** December 19, 2024  
 **Version:** 0.1.0  
@@ -6,7 +6,7 @@
 
 ## 🎉 Initial Release
 
-This is the inaugural release of ProxiNet, a privacy-first proximity networking platform built with Flutter.
+This is the inaugural release of Putrace, a privacy-first proximity networking platform built with Flutter.
 
 ## ✨ What's New
 
@@ -117,5 +117,5 @@ This release is licensed under the MIT License.
 
 ---
 
-**ProxiNet Team**  
+**Putrace Team**  
 *Building the future of privacy-first networking*

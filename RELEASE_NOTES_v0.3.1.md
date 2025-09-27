@@ -1,4 +1,4 @@
-# ProxiNet Release Notes v0.3.1
+# Putrace Release Notes v0.3.1
 
 **Release Date:** December 19, 2024  
 **Version:** 0.3.1+4  
@@ -26,7 +26,7 @@ This release fixes a critical issue that was preventing users from being discove
 
 ### **Service Architecture**
 - Proper dependency injection and service integration
-- Centralized location management through ProxinetPresenceSyncService
+- Centralized location management through PutracePresenceSyncService
 - Better error handling and fallbacks
 
 ### **Data Flow**
@@ -101,5 +101,5 @@ Future releases will include:
 
 ---
 
-**ProxiNet Team**  
+**Putrace Team**  
 *Building meaningful connections through proximity*

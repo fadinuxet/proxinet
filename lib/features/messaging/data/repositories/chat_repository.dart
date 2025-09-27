@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/foundation.dart';
 import '../../domain/models/chat_message.dart';
 import '../../domain/models/conversation.dart';
 
@@ -39,9 +40,9 @@ class ChatRepository {
       // Update conversation metadata
       await _updateConversationMetadata(conversationId, message);
       
-      print('Message sent successfully: ${message.id}');
+      
     } catch (e) {
-      print('Error sending message: $e');
+      
       rethrow;
     }
   }
@@ -77,7 +78,7 @@ class ChatRepository {
                       data['id'] = doc.id;
                       return Conversation.fromJson(data);
                     } catch (e) {
-                      print('Error parsing conversation ${doc.id}: $e');
+                      
                       return null;
                     }
                   })
@@ -85,16 +86,16 @@ class ChatRepository {
                   .cast<Conversation>()
                   .toList();
             } catch (e) {
-              print('Error processing conversations snapshot: $e');
+              
               return <Conversation>[];
             }
           })
           .handleError((error) {
-            print('Error in conversations stream: $error');
+            
             return <Conversation>[];
           });
     } catch (e) {
-      print('Error setting up conversations stream: $e');
+      
       return Stream.value(<Conversation>[]);
     }
   }
@@ -154,9 +155,9 @@ class ChatRepository {
         'hasUnreadMessages': true, // Mark as having unread messages
       });
       
-      print('Updated conversation metadata: $conversationId');
+      
     } catch (e) {
-      print('Error updating conversation metadata: $e');
+      
       // If update fails, try to create the conversation
       await _ensureConversationExists(conversationId, message.senderId, message.receiverId);
       // Try update again
@@ -172,7 +173,8 @@ class ChatRepository {
           'hasUnreadMessages': true,
         });
       } catch (e2) {
-        print('Failed to update conversation metadata after retry: $e2');
+        // Log error but don't throw - this is a background operation
+        debugPrint('Error updating conversation: $e2');
       }
     }
   }
@@ -203,10 +205,10 @@ class ChatRepository {
             .doc(conversationId)
             .set(conversation.toJson());
         
-        print('Created new conversation: $conversationId');
+        
       }
     } catch (e) {
-      print('Error ensuring conversation exists: $e');
+      
       rethrow;
     }
   }

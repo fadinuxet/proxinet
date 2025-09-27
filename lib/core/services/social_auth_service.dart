@@ -1,6 +1,7 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/foundation.dart';
 
 class SocialAuthService {
   static final FirebaseAuth _auth = FirebaseAuth.instance;
@@ -27,7 +28,7 @@ class SocialAuthService {
       
       return userCredential;
     } catch (e) {
-      print('Google sign in error: $e');
+      
       rethrow;
     }
   }
@@ -39,7 +40,7 @@ class SocialAuthService {
       // For now, we'll show a message that it's not available
       throw UnimplementedError('Apple Sign In requires iOS setup and additional configuration');
     } catch (e) {
-      print('Apple sign in error: $e');
+      
       rethrow;
     }
   }
@@ -50,7 +51,7 @@ class SocialAuthService {
       // Twitter OAuth requires Twitter Developer account and app configuration
       throw UnimplementedError('Twitter sign-in requires Twitter Developer setup');
     } catch (e) {
-      print('Twitter sign in error: $e');
+      
       rethrow;
     }
   }
@@ -61,7 +62,7 @@ class SocialAuthService {
       // LinkedIn OAuth requires LinkedIn Developer account and app configuration
       throw UnimplementedError('LinkedIn sign-in requires LinkedIn Developer setup');
     } catch (e) {
-      print('LinkedIn sign in error: $e');
+      
       rethrow;
     }
   }
@@ -111,7 +112,8 @@ class SocialAuthService {
         });
       }
     } catch (e) {
-      print('Error creating/updating profile: $e');
+      // Log error but don't throw - this is a background operation
+      debugPrint('Error updating user profile: $e');
     }
   }
   
@@ -121,7 +123,7 @@ class SocialAuthService {
       await _googleSignIn.signOut();
       await _auth.signOut();
     } catch (e) {
-      print('Sign out error: $e');
+      
       rethrow;
     }
   }

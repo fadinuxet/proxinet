@@ -1,0 +1,14 @@
+graph LR
+    subgraph "Availability Modes"
+        A[BLE Proximity Mode<br/>✅ Implemented<br/>I'm here right now<br/>10-100m range]
+        B[Location-Based Mode<br/>✅ Implemented<br/>I'll be at this location<br/>GPS + Map-based]
+        C[Global Virtual Mode<br/>❌ Not Implemented<br/>I'm available online<br/>Worldwide timezone-aware]
+    end
+    
+    A --> D[Immediate Discovery<br/>Real-time BLE scanning]
+    B --> E[Planned Availability<br/>Time-bounded sessions]
+    C --> F[Virtual Meetings<br/>Video/Audio/Chat]
+    
+    D --> G[Conference Mode<br/>Offline networking]
+    E --> H[Map Integration<br/>Location visualization]
+    F --> I[Global Discovery<br/>Cloud-based matching]

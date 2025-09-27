@@ -33,7 +33,7 @@ class ConversationTile extends StatelessWidget {
           onTap: onTap,
           leading: CircleAvatar(
             radius: 24,
-            backgroundColor: scheme.primary.withOpacity(0.1),
+            backgroundColor: scheme.primary.withValues(alpha: 0.1),
             backgroundImage: avatarUrl != null ? NetworkImage(avatarUrl) : null,
             child: avatarUrl == null
                 ? Text(

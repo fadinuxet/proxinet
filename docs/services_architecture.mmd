@@ -1,0 +1,33 @@
+graph TB
+    subgraph "Core Services"
+        A[ProfessionalAuthService<br/>- Professional identity creation<br/>- No phone number required<br/>- Domain verification<br/>- Encryption key generation]
+        
+        B[PutraceBleService<br/>- Device advertising/scanning<br/>- Proximity discovery<br/>- Permission management<br/>- BLE diagnostics]
+        
+        C[PutracePresenceService<br/>- Location-based availability<br/>- Geohash-based positioning<br/>- Real-time presence sync]
+        
+        D[PutraceCryptoService<br/>- End-to-end encryption<br/>- Key pair generation<br/>- HMAC token creation<br/>- Secure data handling]
+        
+        E[SecureMessagingService<br/>- Encrypted message handling<br/>- Key exchange protocols<br/>- Message integrity verification]
+        
+        F[BLEConferenceModeService<br/>- Offline conference networking<br/>- BLE mesh communication<br/>- Event-specific encryption]
+    end
+    
+    subgraph "Data Models"
+        G[UserProfile<br/>- Professional information<br/>- Privacy settings<br/>- Availability status]
+        
+        H[ProfessionalIdentity<br/>- Work email only<br/>- Company/title info<br/>- Encryption keys]
+        
+        I[Connection<br/>- Connection requests<br/>- Status tracking<br/>- Interaction history]
+        
+        J[EncryptedMessage<br/>- Secure communication<br/>- Key management<br/>- Message types]
+    end
+    
+    A --> G
+    A --> H
+    B --> G
+    C --> G
+    D --> H
+    D --> J
+    E --> J
+    F --> G

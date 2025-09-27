@@ -39,7 +39,7 @@ class _LoginPageState extends State<LoginPage> {
       
       if (mounted) {
         // Navigate to main app
-        context.go('/proxinet');
+        context.go('/putrace');
       }
     } on FirebaseAuthException catch (e) {
       String message = 'An error occurred during sign in.';
@@ -127,7 +127,7 @@ class _LoginPageState extends State<LoginPage> {
       setState(() => _isLoading = true);
       final result = await SocialAuthService.signInWithGoogle();
       if (result != null && mounted) {
-        context.go('/proxinet');
+        context.go('/putrace');
       }
     } catch (e) {
       if (mounted) {
@@ -150,7 +150,7 @@ class _LoginPageState extends State<LoginPage> {
       setState(() => _isLoading = true);
       final result = await SocialAuthService.signInWithApple();
       if (result != null && mounted) {
-        context.go('/proxinet');
+        context.go('/putrace');
       }
     } catch (e) {
       if (mounted) {
@@ -173,7 +173,7 @@ class _LoginPageState extends State<LoginPage> {
       setState(() => _isLoading = true);
       final result = await SocialAuthService.signInWithTwitter();
       if (result != null && mounted) {
-        context.go('/proxinet');
+        context.go('/putrace');
       }
     } catch (e) {
       if (mounted) {
@@ -196,7 +196,7 @@ class _LoginPageState extends State<LoginPage> {
       setState(() => _isLoading = true);
       final result = await SocialAuthService.signInWithLinkedIn();
       if (result != null && mounted) {
-        context.go('/proxinet');
+        context.go('/putrace');
       }
     } catch (e) {
       if (mounted) {
@@ -223,9 +223,9 @@ class _LoginPageState extends State<LoginPage> {
         decoration: BoxDecoration(
           gradient: LinearGradient(
             colors: [
-              scheme.primary.withOpacity(0.1),
-              scheme.secondary.withOpacity(0.1),
-              scheme.tertiary.withOpacity(0.1),
+              scheme.primary.withValues(alpha: 0.1),
+              scheme.secondary.withValues(alpha: 0.1),
+              scheme.tertiary.withValues(alpha: 0.1),
             ],
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
@@ -252,7 +252,7 @@ class _LoginPageState extends State<LoginPage> {
                             shape: BoxShape.circle,
                             boxShadow: [
                               BoxShadow(
-                                color: scheme.primary.withOpacity(0.3),
+                                color: scheme.primary.withValues(alpha: 0.3),
                                 blurRadius: 20,
                                 offset: const Offset(0, 8),
                               ),
@@ -275,7 +275,7 @@ class _LoginPageState extends State<LoginPage> {
                         ),
                         const SizedBox(height: 8),
                         Text(
-                          'Sign in to your Proxinet account',
+                          'Sign in to your Putrace account',
                           style: GoogleFonts.inter(
                             fontSize: 16,
                             color: scheme.onSurfaceVariant,
@@ -473,7 +473,7 @@ class _LoginPageState extends State<LoginPage> {
                         setState(() => _isLoading = true);
                         await FirebaseAuth.instance.signInAnonymously();
                         if (mounted) {
-                          context.go('/proxinet');
+                          context.go('/putrace');
                         }
                       } catch (e) {
                         if (mounted) {
@@ -604,7 +604,7 @@ class _SocialLoginButton extends StatelessWidget {
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(16),
         ),
-        side: BorderSide(color: color.withOpacity(0.3)),
+        side: BorderSide(color: color.withValues(alpha: 0.3)),
       ),
       icon: Icon(Icons.account_circle, color: color, size: 20),
       label: Text(

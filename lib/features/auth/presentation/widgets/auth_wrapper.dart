@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../pages/login_page.dart';
 import '../pages/signup_page.dart';
-import '../../../proxinet/presentation/pages/proxinet_home_page.dart';
+import '../../../putrace/presentation/pages/putrace_home_page.dart';
 
 class AuthWrapper extends StatelessWidget {
   const AuthWrapper({super.key});
@@ -23,7 +23,7 @@ class AuthWrapper extends StatelessWidget {
         
         // User is signed in
         if (snapshot.hasData && snapshot.data != null) {
-          return const ProxinetHomePage();
+          return const PutraceHomePage();
         }
         
         // User is not signed in, show auth pages

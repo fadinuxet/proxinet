@@ -33,7 +33,7 @@ export const resolveBleToken = functions.https.onCall(async (data, context) => {
   }
 
   const profile = await db.collection('profiles').doc(peerUid).get();
-  const name: string = (profile.data()?.name as string | undefined) ?? 'Proxinet User';
+  const name: string = (profile.data()?.name as string | undefined) ?? 'Putrace User';
   const initials = name
     .split(' ')
     .map((p) => p.trim()[0])
@@ -205,7 +205,7 @@ export const overlapAlerts = functions.firestore
           userId,
           title,
           body: alertBody,
-          route: '/proxinet/posts',
+          route: '/putrace/posts',
           postId: snap.id,
           type: 'new_post',
           hasOverlaps: tagMatches.length > 0,
@@ -223,7 +223,7 @@ export const overlapAlerts = functions.firestore
             tokens,
             notification: { title, body: alertBody },
             data: { 
-              route: '/proxinet/posts',
+              route: '/putrace/posts',
               postId: snap.id,
               type: 'new_post'
             },
@@ -284,7 +284,7 @@ export const availabilityAlerts = functions.firestore
           userId: peer,
           title,
           body,
-          route: '/proxinet/nearby',
+          route: '/putrace/nearby',
           type: 'availability',
           sourceUserId: userId,
           expiresAt: until,
@@ -302,7 +302,7 @@ export const availabilityAlerts = functions.firestore
             tokens,
             notification: { title, body },
             data: { 
-              route: '/proxinet/nearby',
+              route: '/putrace/nearby',
               type: 'availability',
               sourceUserId: userId
             },

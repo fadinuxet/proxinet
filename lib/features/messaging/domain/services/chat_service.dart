@@ -13,7 +13,7 @@ class ChatService {
     try {
       return _repository.getConversations();
     } catch (e) {
-      print('ChatService error: $e');
+      
       // Return empty stream on error
       return Stream.value(<Conversation>[]);
     }
@@ -26,7 +26,7 @@ class ChatService {
       // This will be replaced with actual Firestore queries once the system is stable
       return await createLocalTestConversations();
     } catch (e) {
-      print('ChatService getConversations error: $e');
+      
       return <Conversation>[];
     }
   }
@@ -68,6 +68,37 @@ class ChatService {
     return await _repository.getOrCreateConversation(otherUserId);
   }
 
+  // Get or create conversation with specific ID and user details
+  Future<Conversation?> getOrCreateConversation(String conversationId, String otherUserId, String otherUserName) async {
+    try {
+      final currentUser = FirebaseAuth.instance.currentUser;
+      if (currentUser == null) throw Exception('User not authenticated');
+
+      // Create a new conversation
+      final conversation = Conversation(
+        id: conversationId,
+        participantIds: [currentUser.uid, otherUserId],
+        lastMessageId: '',
+        lastMessageContent: '',
+        lastMessageTime: DateTime.now(),
+        hasUnreadMessages: false,
+        createdAt: DateTime.now(),
+        updatedAt: DateTime.now(),
+        metadata: {
+          currentUser.uid: 'You',
+          otherUserId: otherUserName,
+        },
+      );
+
+      // For now, return the conversation object
+      // In a full implementation, this would be saved to Firestore
+      return conversation;
+    } catch (e) {
+      
+      return null;
+    }
+  }
+
   // Check if user has unread messages
   Stream<bool> hasUnreadMessages() {
     try {
@@ -75,7 +106,7 @@ class ChatService {
         return conversations.any((conv) => conv.hasUnreadMessages);
       });
     } catch (e) {
-      print('ChatService hasUnreadMessages error: $e');
+      
       return Stream.value(false);
     }
   }
@@ -86,7 +117,7 @@ class ChatService {
       final currentUser = FirebaseAuth.instance.currentUser;
       return currentUser != null;
     } catch (e) {
-      print('ChatService readiness check error: $e');
+      
       return false;
     }
   }
@@ -99,16 +130,16 @@ class ChatService {
 
       // Create a test conversation with a dummy user
       final testUserId = 'test_user_${DateTime.now().millisecondsSinceEpoch}';
-      final conversationId = await _repository.getOrCreateConversation(testUserId);
+      // final conversationId = await _repository.getOrCreateConversation(testUserId); // Removed unused variable
       
       // Send a test message
       await sendTextMessage(testUserId, 'Hello! This is a test message to verify the messaging system is working.');
       
-      print('Test conversation created: $conversationId');
+      
     } catch (e) {
-      print('Error creating test conversation: $e');
+      
       // For now, just show success to avoid errors
-      print('Test conversation creation simulated successfully');
+      
     }
   }
 
@@ -138,10 +169,10 @@ class ChatService {
         ),
       ];
       
-      print('Created ${testConversations.length} local test conversations');
+      
       return testConversations;
     } catch (e) {
-      print('Error creating local test conversations: $e');
+      
       return <Conversation>[];
     }
   }

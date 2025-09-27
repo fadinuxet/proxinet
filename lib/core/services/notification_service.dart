@@ -244,7 +244,7 @@ class NotificationService {
   Future<void> init() async {
     // Initialize the notification service
     // This method is kept for compatibility with existing code
-    print('NotificationService initialized');
+    
   }
 
   Future<void> showNow({required String title, required String body}) async {
@@ -257,7 +257,7 @@ class NotificationService {
       subtitle: body,
       timestamp: DateTime.now(),
     ));
-    print('Notification shown: $title - $body');
+    
   }
 }
 

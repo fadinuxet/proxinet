@@ -1,7 +1,7 @@
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:get_it/get_it.dart';
 import 'notification_service.dart';
-import 'package:proxinet/proxinet/proxinet_router.dart';
+import 'package:putrace/putrace/putrace_router.dart';
 
 @pragma('vm:entry-point')
 Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
@@ -23,7 +23,7 @@ Future<void> setupPushHandlers() async {
   FirebaseMessaging.onMessageOpenedApp.listen((message) async {
     final route = message.data['route'] as String?;
     if (route != null) {
-      ProxinetRouter.navKey.currentState?.pushNamed(route);
+      PutraceRouter.navKey.currentState?.pushNamed(route);
     }
   });
 }

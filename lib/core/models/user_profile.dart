@@ -1,5 +1,173 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
+// Professional Identity Model for Privacy-First Architecture
+class ProfessionalIdentity {
+  final String identityId;
+  final String displayName;
+  final String professionalEmail; // Work email only, no phone required
+  final String? company;
+  final String? title;
+  final List<String> skills;
+  final PrivacyLevel privacyLevel;
+  final DateTime createdAt;
+  final bool isVerified;
+  final String? encryptionPublicKey; // For end-to-end encryption
+  final IdentityType identityType;
+
+  const ProfessionalIdentity({
+    required this.identityId,
+    required this.displayName,
+    required this.professionalEmail,
+    this.company,
+    this.title,
+    this.skills = const [],
+    this.privacyLevel = PrivacyLevel.professional,
+    required this.createdAt,
+    this.isVerified = false,
+    this.encryptionPublicKey,
+    this.identityType = IdentityType.professional,
+  });
+
+  Map<String, dynamic> toMap() {
+    return {
+      'identityId': identityId,
+      'displayName': displayName,
+      'professionalEmail': professionalEmail,
+      'company': company,
+      'title': title,
+      'skills': skills,
+      'privacyLevel': privacyLevel.name,
+      'createdAt': Timestamp.fromDate(createdAt),
+      'isVerified': isVerified,
+      'encryptionPublicKey': encryptionPublicKey,
+      'identityType': identityType.name,
+    };
+  }
+
+  factory ProfessionalIdentity.fromMap(Map<String, dynamic> map) {
+    return ProfessionalIdentity(
+      identityId: map['identityId'] ?? '',
+      displayName: map['displayName'] ?? '',
+      professionalEmail: map['professionalEmail'] ?? '',
+      company: map['company'],
+      title: map['title'],
+      skills: List<String>.from(map['skills'] ?? []),
+      privacyLevel: PrivacyLevel.values.firstWhere(
+        (e) => e.name == map['privacyLevel'],
+        orElse: () => PrivacyLevel.professional,
+      ),
+      createdAt: (map['createdAt'] as Timestamp).toDate(),
+      isVerified: map['isVerified'] ?? false,
+      encryptionPublicKey: map['encryptionPublicKey'],
+      identityType: IdentityType.values.firstWhere(
+        (e) => e.name == map['identityType'],
+        orElse: () => IdentityType.professional,
+      ),
+    );
+  }
+}
+
+// Encryption Models
+class EncryptionKeyPair {
+  final String publicKey;
+  final String privateKey; // Never leaves device
+  final DateTime createdAt;
+  final String keyId;
+  final String algorithm;
+
+  const EncryptionKeyPair({
+    required this.publicKey,
+    required this.privateKey,
+    required this.createdAt,
+    required this.keyId,
+    this.algorithm = 'RSA-2048',
+  });
+
+  Map<String, dynamic> toMap() {
+    return {
+      'publicKey': publicKey,
+      'createdAt': Timestamp.fromDate(createdAt),
+      'keyId': keyId,
+      'algorithm': algorithm,
+      // Note: privateKey is never serialized to cloud
+    };
+  }
+}
+
+class EncryptedMessage {
+  final String messageId;
+  final String senderId;
+  final String recipientId;
+  final String encryptedContent;
+  final String encryptionVersion;
+  final String keyId;
+  final DateTime timestamp;
+  final MessageType messageType;
+
+  const EncryptedMessage({
+    required this.messageId,
+    required this.senderId,
+    required this.recipientId,
+    required this.encryptedContent,
+    required this.encryptionVersion,
+    required this.keyId,
+    required this.timestamp,
+    this.messageType = MessageType.text,
+  });
+
+  Map<String, dynamic> toMap() {
+    return {
+      'messageId': messageId,
+      'senderId': senderId,
+      'recipientId': recipientId,
+      'encryptedContent': encryptedContent,
+      'encryptionVersion': encryptionVersion,
+      'keyId': keyId,
+      'timestamp': Timestamp.fromDate(timestamp),
+      'messageType': messageType.name,
+    };
+  }
+
+  factory EncryptedMessage.fromMap(Map<String, dynamic> map) {
+    return EncryptedMessage(
+      messageId: map['messageId'] ?? '',
+      senderId: map['senderId'] ?? '',
+      recipientId: map['recipientId'] ?? '',
+      encryptedContent: map['encryptedContent'] ?? '',
+      encryptionVersion: map['encryptionVersion'] ?? '',
+      keyId: map['keyId'] ?? '',
+      timestamp: (map['timestamp'] as Timestamp).toDate(),
+      messageType: MessageType.values.firstWhere(
+        (e) => e.name == map['messageType'],
+        orElse: () => MessageType.text,
+      ),
+    );
+  }
+}
+
+// Enums for Privacy-First Architecture
+enum PrivacyLevel {
+  public,
+  connections,
+  professional,
+  private,
+  anonymous,
+}
+
+enum IdentityType {
+  professional,
+  personal,
+  anonymous,
+}
+
+enum MessageType {
+  text,
+  contactInfo,
+  meetingRequest,
+  meetingDetails,
+  businessCard,
+}
+
 class UserProfile {
   final String id;
   final String email;

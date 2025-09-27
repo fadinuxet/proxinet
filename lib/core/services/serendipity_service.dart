@@ -1,7 +1,6 @@
 import 'dart:async';
 import 'package:uuid/uuid.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'serendipity_models.dart';
 
 class SerendipityService {
@@ -138,7 +137,7 @@ class SerendipityService {
       return scoredUsers.take(limit).toList();
       
     } catch (e) {
-      print('Error getting users with similar interests: $e');
+      
       return [];
     }
   }
@@ -152,7 +151,7 @@ class SerendipityService {
       final suggestions = <Map<String, dynamic>>[];
       
       // Get user's recent posts
-      final userPosts = await _getUserRecentPosts(userId);
+      // final userPosts = await _getUserRecentPosts(userId); // Removed unused variable
       
       // Get users with similar interests
       final userProfile = await _getUserProfile(userId);
@@ -189,7 +188,7 @@ class SerendipityService {
       return suggestions.take(limit).toList();
       
     } catch (e) {
-      print('Error getting serendipity suggestions: $e');
+      
       return [];
     }
   }
@@ -207,7 +206,7 @@ class SerendipityService {
       }
       return null;
     } catch (e) {
-      print('Error getting user profile: $e');
+      
       return null;
     }
   }
@@ -227,7 +226,7 @@ class SerendipityService {
       
       return users.docs.map((doc) => doc.data()).toList();
     } catch (e) {
-      print('Error getting nearby users: $e');
+      
       return [];
     }
   }
@@ -290,21 +289,21 @@ class SerendipityService {
     return words1.any((word) => words2.contains(word));
   }
 
-  Future<List<Map<String, dynamic>>> _getUserRecentPosts(String userId) async {
-    try {
-      final posts = await FirebaseFirestore.instance
-          .collection('posts')
-          .where('authorId', isEqualTo: userId)
-          .orderBy('createdAt', descending: true)
-          .limit(5)
-          .get();
-      
-      return posts.docs.map((doc) => doc.data()).toList();
-    } catch (e) {
-      print('Error getting user recent posts: $e');
-      return [];
-    }
-  }
+  // Future<List<Map<String, dynamic>>> _getUserRecentPosts(String userId) async {
+  //   try {
+  //     final posts = await FirebaseFirestore.instance
+  //         .collection('posts')
+  //         .where('authorId', isEqualTo: userId)
+  //         .orderBy('createdAt', descending: true)
+  //         .limit(5)
+  //         .get();
+  //     
+  //     return posts.docs.map((doc) => doc.data()).toList();
+  //   } catch (e) {
+  //     
+  //     return [];
+  //   }
+  // }
 
   Future<List<Map<String, dynamic>>> _getEventOverlaps(String userId) async {
     try {
@@ -350,7 +349,7 @@ class SerendipityService {
       
       return suggestions;
     } catch (e) {
-      print('Error getting event overlaps: $e');
+      
       return [];
     }
   }

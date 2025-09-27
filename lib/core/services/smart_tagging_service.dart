@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/foundation.dart';
 import 'package:uuid/uuid.dart';
 import '../models/serendipity_models.dart';
 
@@ -84,7 +85,7 @@ class SmartTaggingService {
 
       return tags;
     } catch (e) {
-      print('Error getting all tags: $e');
+      
       return [];
     }
   }
@@ -102,7 +103,7 @@ class SmartTaggingService {
           .map((doc) => SmartTag.fromMap(doc.data()))
           .toList();
     } catch (e) {
-      print('Error getting tags by type: $e');
+      
       return [];
     }
   }
@@ -120,7 +121,7 @@ class SmartTaggingService {
           .map((doc) => SmartTag.fromMap(doc.data()))
           .toList();
     } catch (e) {
-      print('Error getting popular tags: $e');
+      
       return [];
     }
   }
@@ -157,7 +158,7 @@ class SmartTaggingService {
 
       return exactMatches;
     } catch (e) {
-      print('Error getting tag suggestions: $e');
+      
       return [];
     }
   }
@@ -203,7 +204,7 @@ class SmartTaggingService {
       _refreshTags();
       return tagId;
     } catch (e) {
-      print('Error creating tag: $e');
+      
       rethrow;
     }
   }
@@ -228,7 +229,8 @@ class SmartTaggingService {
         }
       });
     } catch (e) {
-      print('Error updating tag usage: $e');
+      // Log error but don't throw - this is a background operation
+      debugPrint('Error updating tag popularity: $e');
     }
   }
 
@@ -255,7 +257,7 @@ class SmartTaggingService {
           .take(limit)
           .toList();
     } catch (e) {
-      print('Error getting related tags: $e');
+      
       return [];
     }
   }
@@ -297,7 +299,7 @@ class SmartTaggingService {
       // Limit suggestions
       return suggestedTags.take(5).toList();
     } catch (e) {
-      print('Error auto-generating tags: $e');
+      
       return [];
     }
   }
@@ -320,7 +322,7 @@ class SmartTaggingService {
           .map((doc) => SmartTag.fromMap(doc.data()))
           .toList();
     } catch (e) {
-      print('Error getting trending tags: $e');
+      
       return [];
     }
   }
@@ -341,7 +343,7 @@ class SmartTaggingService {
 
       return results;
     } catch (e) {
-      print('Error searching tags: $e');
+      
       return [];
     }
   }
@@ -374,7 +376,7 @@ class SmartTaggingService {
   Future<void> _initializePredefinedTags() async {
     try {
       final batch = _firestore.batch();
-      int tagCount = 0;
+      // int tagCount = 0; // Removed unused variable
 
       for (final entry in _predefinedTags.entries) {
         for (final tagName in entry.value) {
@@ -394,14 +396,15 @@ class SmartTaggingService {
 
           final tagRef = _firestore.collection('smart_tags').doc(tagId);
           batch.set(tagRef, tag.toMap());
-          tagCount++;
+          // tagCount++; // Removed unused variable increment
         }
       }
 
       await batch.commit();
-      print('Initialized $tagCount predefined tags');
+      
     } catch (e) {
-      print('Error initializing predefined tags: $e');
+      // Log error but don't throw - this is a background operation
+      debugPrint('Error processing tags: $e');
     }
   }
 

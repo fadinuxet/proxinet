@@ -44,8 +44,8 @@ class Conversation {
             : DateTime.now(),
       );
     } catch (e) {
-      print('Error parsing Conversation from JSON: $e');
-      print('JSON data: $json');
+      
+      
       rethrow;
     }
   }

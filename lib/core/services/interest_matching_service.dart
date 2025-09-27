@@ -1,14 +1,14 @@
 import 'dart:async';
 import 'dart:math';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/foundation.dart';
 import 'package:uuid/uuid.dart';
 import '../models/serendipity_models.dart';
 import '../models/user_profile.dart';
 
 class InterestMatchingService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
-  final FirebaseAuth _auth = FirebaseAuth.instance;
+  // final FirebaseAuth _auth = FirebaseAuth.instance; // Removed unused field
   final Uuid _uuid = const Uuid();
 
   // Stream controllers for real-time updates
@@ -111,7 +111,7 @@ class InterestMatchingService {
 
       return filteredPosts;
     } catch (e) {
-      print('Error getting personalized recommendations: $e');
+      
       return [];
     }
   }
@@ -158,7 +158,7 @@ class InterestMatchingService {
 
       return filteredUsers;
     } catch (e) {
-      print('Error getting users with similar interests: $e');
+      
       return [];
     }
   }
@@ -221,7 +221,7 @@ class InterestMatchingService {
           .map((scored) => scored.post)
           .toList();
     } catch (e) {
-      print('Error finding event overlaps: $e');
+      
       return [];
     }
   }
@@ -282,7 +282,7 @@ class InterestMatchingService {
 
       return insights;
     } catch (e) {
-      print('Error getting network insights: $e');
+      
       return {};
     }
   }
@@ -313,7 +313,7 @@ class InterestMatchingService {
       _refreshMatches();
       return matchId;
     } catch (e) {
-      print('Error creating interest match: $e');
+      
       rethrow;
     }
   }
@@ -338,7 +338,8 @@ class InterestMatchingService {
 
       _refreshMatches();
     } catch (e) {
-      print('Error updating match interaction: $e');
+      // Log error but don't throw - this is a background operation
+      debugPrint('Error updating match: $e');
     }
   }
 
@@ -372,7 +373,7 @@ class InterestMatchingService {
 
       return nearbyProfiles;
     } catch (e) {
-      print('Error getting nearby users: $e');
+      
       return [];
     }
   }

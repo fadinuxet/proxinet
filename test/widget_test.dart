@@ -8,12 +8,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:proxinet/main.dart';
+import 'package:putrace/main.dart';
 
 void main() {
-  testWidgets('ProxiNet app smoke test', (WidgetTester tester) async {
+  testWidgets('Putrace app smoke test', (WidgetTester tester) async {
     // Build our app and trigger a frame.
-    await tester.pumpWidget(const ProxinetApp());
+    await tester.pumpWidget(const PutraceApp());
 
     // Verify that our app loads without crashing
     expect(find.byType(MaterialApp), findsOneWidget);
