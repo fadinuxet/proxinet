@@ -42,7 +42,7 @@ jobs:
     
     - name: Upload coverage to Codecov
       if: steps.coverage_check.outputs.coverage_exists == 'true'
-      uses: codecov/codecov-action@v3
+      uses: codecov/codecov-action@v4
       with:
         file: coverage/lcov.info
         flags: unittests
@@ -68,7 +68,7 @@ jobs:
       run: flutter build apk --release --no-tree-shake-icons
     
     - name: Upload APK artifact
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: app-release-apk
         path: build/app/outputs/flutter-apk/app-release.apk
